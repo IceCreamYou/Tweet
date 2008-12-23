@@ -1,0 +1,246 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ *   Builds links to post pages to twitter.
+ */
+
+/**
+ * Implementation of hook_help().
+ */
+function tweet_help($section='') {
+  $output = '';
+  switch ($section) {
+    case "admin/help#tweet":
+      $output = '<p>'. t("This module builds links to post pages to twitter.  See the function tweet_to_twitter() in the module file for an explanation of how to use it.") .'</p>';
+      break;
+  }
+  return $output;
+}
+
+/**
+ * Implementation of hook_link().
+ */
+function tweet_link($type, $node = NULL, $teaser = FALSE) {
+  if ($type == 'node' && in_array($node->type, variable_get('tweet_types', _tweet_node_types()))) {
+    $title = variable_get('tweet_title', 1);
+    if (!$teaser) {
+      $link_type = variable_get('tweet_node', 'icon');
+      if ($link_type != 'none') {
+        $links['tweet'] = _tweet_to_twitter($link_type, $title);
+        return $links;
+      }
+    }
+    else {
+      $link_type = variable_get('tweet_teaser', 'none');
+      if ($link_type != 'none') {
+        $links['tweet'] = _tweet_to_twitter($link_type, TRUE, $node->nid);
+        return $links;
+      }
+    }
+  }
+}
+
+/**
+ * Implementation of hook_menu().
+ */
+function tweet_menu($may_cache) {
+  $items = array();
+  if (!$may_cache) {
+    $items[] = array(
+      'path' => 'admin/settings/tweet',
+      'title' => t('Tweet settings'),
+      'description' => t('Allows administrators to adjust certain display settings for Tweet.'),
+      'callback' => 'drupal_get_form',
+      'callback arguments' => 'tweet_admin',
+      'access' => user_access('access administration pages'),
+      'type' => MENU_NORMAL_ITEM,
+    );
+  }
+  return $items;
+}
+
+/**
+ * Returns a link from _tweet_to_twitter().
+ * @see _tweet_to_twitter()
+ */
+function tweet_to_twitter($type = 'icon', $title = TRUE, $nid = '', $q = '') {
+  $array = _tweet_to_twitter($type, $title, $nid, $q);
+  return l($array['title'], $array['href'], $array['attributes'], $array['query'], NULL, TRUE, $array['html']);
+}
+
+/**
+ * Creates a link to post a URL and optionally title to twitter.  Uses the current page by default.
+ *
+ * @param $type
+ *   Specifies what will show up in the link: the twitter icon, the twitter icon and text, or just text.
+ *   Pass 'icon' to show just the icon, 'icon_text' to show the icon and text, and 'text' to show just the text.
+ *   Required if display options for nodes are set to 'none' on the settings page.
+ * @param $title
+ *   If FALSE, no page title will be included in the twitter message; if TRUE, the pagetitle will be included and will be determined from the current page or the NID passed to the function.
+ *   If $title is a string and it is not empty, the string will be used as the title.  @title is replaced with the current page's title or the title as determined from the NID passed to the function.
+ *   If 1, the default from the settings page will be used.
+ * @param $nid
+ *   The NID of the node for which the twitter link should be constructed.
+ *   Avoid using this if you're already on the page you want to build the link for, because it may cause the incorrect page title to be used if certain modules are installed.
+ * @param $q
+ *   The absolute URL of the page for which the twitter link should be constructed.
+ *   If this is not the current page, the title must be set manually, or it will be incorrect.
+ * @see _tweet_make_url()
+ * @see _tweet_get_title()
+ * @see tweet_to_twitter()
+ * @see tweet_link()
+ * @return
+ *   A themed link to post the specified or current page to twitter, optionally including the page title.
+ */
+function _tweet_to_twitter($type = '', $title = 1, $nid = '', $q = '') {
+  if ($nid && !$q) {
+    global $base_url;
+    $alias = drupal_get_path_alias('node/'. $nid);
+    $q = $base_url . base_path() . $alias;
+  }
+  $tweet = _tweet_make_url($q);
+  if ($title === 1 || $title === '1') {
+    $title = variable_get('tweet_title', 1);
+  }
+  if ($title) {
+    if (is_string($title) && $title !== '1') {
+      $title = str_replace('@title', _tweet_get_title($nid), $title);
+      $tweet .= ' '. $title;
+    }
+    else {
+      $tweet .= ' '. _tweet_get_title($nid);
+    }
+  }
+  else {
+    //If titles are not included, add a space anyway so the user can begin typing a description right away.
+    $tweet .= ' ';
+  }
+  $tweet = drupal_urlencode($tweet);
+  $path = 'http://twitter.com/home';
+  $text = t('Post to Twitter');
+  $image = '<img src="http://assets1.twitter.com/images/favicon.ico" alt='. $text .' />';
+  if (!$type) {
+    //Note that $type can be 'none', in which case nothing shows up.
+    $type = variable_get('tweet_node', 'icon');
+  }
+  if ($type == 'icon') {
+    $show = $image;
+  }
+  else if ($type == 'icon_text') {
+    $show = $image .' '. $text;
+  }
+  else if ($type == 'text') {
+    $show = $text;
+  }
+  $attributes = array('target' => '_blank', 'class' => 'tweet');
+  return array('title' => $show, 'href' => $path, 'attributes' => $attributes, 'query' => 'status='. $tweet, 'html' => TRUE);
+}
+
+/**
+ * Returns the title of the node for which the NID was passed or the current page.
+ * Note that there is no good way to get the page title for a page that is not the current page.
+ * We assume the title is the same as the title of the node if a node is being viewed, but this is often not the case when certain modules are being used.
+ * In this case, it is recommended that you manually pass the title to tweet_to_twitter().
+ *
+ * @param $nid
+ *   The NID of the node for which to return the title.  If not passed, uses the current page.
+ * @see _tweet_to_twitter()
+ * @return
+ *   The title of the node for the NID passed or the title of the current page.
+ */
+function _tweet_get_title($nid = '') {
+  if ($nid) {
+    $node = node_load(array('nid' => $nid));
+    $title = $node->title;
+  }
+  else {
+    $title = drupal_get_title();
+  }
+  if (drupal_strlen($title) > 120) {
+    $title = drupal_substr($title, 0, 119) .'…';
+  }
+  return $title;
+}
+
+/**
+ * Retrieves the abbreviated URL from th8.us.  Requires that PHP was compiled with file_get_contents available.
+ *
+ * @param $q
+ *   The URL of the page for which to create the abbreviated URL.  If not passed uses the current page.
+ * @see _tweet_to_twitter()
+ * @return
+ *   An abbreviated URL.
+ */
+function _tweet_make_url($q = '') {
+  if (!$q) {
+    global $base_url;
+    $q = $base_url . base_path() . $_GET['q'];
+  }
+  $url = file_get_contents('http://th8.us/api.php?url='. $q);
+  $url = drupal_substr($url, 7);
+  $url = 'www.'. $url;
+  return $url;
+}
+
+/**
+ * Settings page.
+ */
+function tweet_admin() {
+  $form['node_type'] = array(
+    '#type' => 'select',
+    '#title' => t('Type of link to show on nodes'),
+    '#default_value' => variable_get('tweet_node', 'icon'),
+    '#options' => array('icon' => 'icon', 'icon_text' => 'icon_text', 'text' => 'text', 'none' => 'none'),
+  );
+  $form['teaser_type'] = array(
+    '#type' => 'select',
+    '#title' => t('Type of link to show on teasers'),
+    '#default_value' => variable_get('tweet_teaser', 'none'),
+    '#options' => array('icon' => 'icon', 'icon_text' => 'icon_text', 'text' => 'text', 'none' => 'none'),
+  );
+  $node_types = variable_get('tweet_types', array());
+  //If all types are selected, un-select them, because the system will still save the result as all selected and it looks better.
+  if ($node_types == _tweet_node_types()) {
+    $node_types = array();
+  }
+  $form['types'] = array(
+    '#type' => 'select',
+    '#multiple' => TRUE,
+    '#title' => t('Node types on which to display link'),
+    '#description' => t('If no types are selected, the link will appear on all types.  To stop links from appearing on any nodes, choose "none" in one of the options above.'),
+    '#default_value' => $node_types,
+    '#options' => _tweet_node_types(),
+  );
+  $form['title'] = array(
+    '#type' => 'select',
+    '#title' => t('Include page title in tweet'),
+    '#default_value' => variable_get('tweet_title', 1),
+    '#options' => array(1 => 'Yes', 0 => 'No'),
+  );
+  return system_settings_form($form);
+}
+
+/**
+ * Submit handler for tweet_admin().
+ * @see tweet_admin()
+ */
+function tweet_admin_submit($form_id, $form_values) {
+  variable_set('tweet_node', $form_values['node_type']);
+  variable_set('tweet_teaser', $form_values['teaser_type']);
+  variable_set('tweet_title', $form_values['title']);
+  //If no types are selected, assign all types.
+  if ($form_values['types'] == array()) {
+    $form_values['types'] = _tweet_node_types();
+  }
+  variable_set('tweet_types', $form_values['types']);
+}
+
+/**
+ * Helper function to provide node types in the format array(TYPE => TYPE).
+ */
+function _tweet_node_types() {
+  $a = array_keys(node_get_types());
+  return array_combine($a, $a);
+}
