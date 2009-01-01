@@ -241,5 +241,9 @@ function tweet_admin_submit($form, &$form_state) {
  */
 function _tweet_node_types() {
   $a = array_keys(node_get_types());
-  return array_combine($a, $a);
+  $return = array();
+  foreach ($a as $type) {
+    $return[$type] = $type;
+  }
+  return $return;
 }
