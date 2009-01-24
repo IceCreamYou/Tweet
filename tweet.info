@@ -1,4 +1,0 @@
-; $Id$
-name = Tweet
-description = Builds links to post pages to twitter.
-core = 6.x
