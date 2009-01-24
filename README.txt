@@ -52,10 +52,7 @@ $title
   the current page's title or the title as determined from the NID passed to
   the function. If 1, the default from the settings page will be used.
 $nid
-  The NID of the node for which the twitter link should be constructed. Avoid
-  using this if you're already on the page you want to build the link for,
-  because otherwise it may cause the incorrect page title to be used if certain
-  modules are installed.
+  The NID of the node for which the twitter link should be constructed.
 $q
   The absolute URL of the page for which the twitter link should be
   constructed. If this is not the current page, the _title_ MUST be set
@@ -65,7 +62,7 @@ $q
 == Installation ==
 ==================
    1. Install this module as usual (FTP the files to sites/all/modules, enable 
-        at admin/build/modules).  See http://drupal.org/node/176044 for help.
+        at admin/build/modules).  See http://drupal.org/node/70151 for help.
    2. If you want, go to admin/settings/tweet to change some minor 
         settings. The defaults should work for most people.
 
