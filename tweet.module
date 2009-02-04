@@ -91,9 +91,9 @@ function tweet_to_twitter($type = 'icon', $title = TRUE, $nid = '', $q = '') {
  */
 function _tweet_to_twitter($type = '', $title = 1, $nid = '', $q = '') {
   if ($nid && !$q) {
-    global $base_url;
+    global $base_url, $base_root, $base_path;
     $alias = drupal_get_path_alias('node/'. $nid);
-    $q = $base_url . base_path() . $alias;
+    $q = $base_root . $base_path . $alias;
   }
   $tweet = _tweet_make_url($q);
   if ($title === 1 || $title === '1') {
@@ -109,14 +109,14 @@ function _tweet_to_twitter($type = '', $title = 1, $nid = '', $q = '') {
     }
   }
   else {
-    //If titles are not included, add a space anyway so the user can begin typing a description right away.
+    //Add a space even though titles are not included so the user can begin typing a description right away.
     $tweet .= ' ';
   }
-  //In 6.x, passing the query string in an array automatically urlencodes according to http://drupal.org/node/114774#url.
-  //$tweet = drupal_urlencode($tweet);
+  //$tweet = drupal_urlencode($tweet);   //In 6.x, passing the query string in an array automatically urlencodes it according to http://drupal.org/node/114774#url.
   $path = 'http://twitter.com/home';
   $text = t('Post to Twitter');
-  $image = '<img src="http://assets1.twitter.com/images/favicon.ico" alt='. $text .' />';
+  $image_location = drupal_get_path('module', 'tweet') .'/icon.png';
+  $image = '<img src="'. $base_url .'/'. variable_get('tweet_image', $image_location) .'" alt="'. $text .'" title="'. $text .'" />';
   if (!$type) {
     //Note that $type can be 'none', in which case nothing shows up.
     $type = variable_get('tweet_node', 'icon');
@@ -130,7 +130,7 @@ function _tweet_to_twitter($type = '', $title = 1, $nid = '', $q = '') {
   else if ($type == 'text') {
     $show = $text;
   }
-  $attributes = array('target' => '_blank', 'class' => 'tweet');
+  $attributes = array('target' => '_blank', 'class' => 'tweet', 'rel' => 'nofollow');
   return array('title' => $show, 'href' => $path, 'attributes' => $attributes, 'query' => array('status' => $tweet), 'html' => TRUE);
 }
 
@@ -209,11 +209,18 @@ function tweet_admin() {
     '#default_value' => $node_types,
     '#options' => _tweet_node_types(),
   );
-  $form['title'] = array(
+  $form['tweet_title'] = array(
     '#type' => 'select',
     '#title' => t('Include page title in tweet'),
     '#default_value' => variable_get('tweet_title', 1),
     '#options' => array(1 => 'Yes', 0 => 'No'),
+  );
+  $image_location = drupal_get_path('module', 'tweet') .'/icon.png';
+  $form['tweet_image'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Image'),
+    '#description' => t('Enter the URL for the image you want to show up if you allow images to appear in your links, relative to your Drupal installation.  Ex.: sites/all/modules/tweet/icon.png'),
+    '#default_value' => variable_get('tweet_image', $image_location),
   );
   //Normally this is unnecessary, but for unknown reasons the form suddenly decided not to recognize the _submit function, so we specify it directly.
   $form['#submit'][] = 'tweet_admin_submit';
@@ -228,6 +235,7 @@ function tweet_admin_submit($form, &$form_state) {
   variable_set('tweet_node', $form_state['values']['tweet_node']);
   variable_set('tweet_teaser', $form_state['values']['tweet_teaser']);
   variable_set('tweet_title', $form_state['values']['tweet_title']);
+  variable_set('tweet_image', $form_state['values']['tweet_image']);
   //If no types are selected, assign all types.
   if ($form_state['values']['tweet_types'] == array()) {
     $form_state['values']['tweet_types'] = _tweet_node_types();
