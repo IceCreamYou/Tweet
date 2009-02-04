@@ -9,9 +9,9 @@
 /**
  * Implementation of hook_help().
  */
-function tweet_help($path, $arg) {
+function tweet_help($section='') {
   $output = '';
-  switch ($path) {
+  switch ($section) {
     case "admin/help#tweet":
       $output = '<p>'. t("This module builds links to post pages to twitter.  See the function tweet_to_twitter() in the module file for an explanation of how to use it.") .'</p>';
       break;
@@ -45,15 +45,19 @@ function tweet_link($type, $node = NULL, $teaser = FALSE) {
 /**
  * Implementation of hook_menu().
  */
-function tweet_menu() {
+function tweet_menu($may_cache) {
   $items = array();
-  $items['admin/settings/tweet'] = array(
-    'title' => 'Tweet settings',
-    'description' => 'Adjust certain display settings for Tweet.',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('tweet_admin'),
-    'access arguments' => array('access administration pages'),
-  );
+  if (!$may_cache) {
+    $items[] = array(
+      'path' => 'admin/settings/tweet',
+      'title' => t('Tweet settings'),
+      'description' => t('Allows administrators to adjust certain display settings for Tweet.'),
+      'callback' => 'drupal_get_form',
+      'callback arguments' => 'tweet_admin',
+      'access' => user_access('access administration pages'),
+      'type' => MENU_NORMAL_ITEM,
+    );
+  }
   return $items;
 }
 
@@ -63,7 +67,7 @@ function tweet_menu() {
  */
 function tweet_to_twitter($type = 'icon', $title = TRUE, $nid = '', $q = '') {
   $array = _tweet_to_twitter($type, $title, $nid, $q);
-  return l($array['title'], $array['href'], array('attributes' => $array['attributes'], 'query' => $array['query'], 'absolute' => TRUE, 'html' => $array['html']));
+  return l($array['title'], $array['href'], $array['attributes'], $array['query'], NULL, TRUE, $array['html']);
 }
 
 /**
@@ -91,9 +95,9 @@ function tweet_to_twitter($type = 'icon', $title = TRUE, $nid = '', $q = '') {
  */
 function _tweet_to_twitter($type = '', $title = 1, $nid = '', $q = '') {
   if ($nid && !$q) {
-    global $base_url;
+    global $base_url, $base_root, $base_path;
     $alias = drupal_get_path_alias('node/'. $nid);
-    $q = $base_url . base_path() . $alias;
+    $q = $base_root . $base_path . $alias;
   }
   $tweet = _tweet_make_url($q);
   if ($title === 1 || $title === '1') {
@@ -109,14 +113,14 @@ function _tweet_to_twitter($type = '', $title = 1, $nid = '', $q = '') {
     }
   }
   else {
-    //If titles are not included, add a space anyway so the user can begin typing a description right away.
+    //Add a space even though titles are not included so the user can begin typing a description right away.
     $tweet .= ' ';
   }
-  //In 6.x, passing the query string in an array automatically urlencodes according to http://drupal.org/node/114774#url.
-  //$tweet = drupal_urlencode($tweet);
+  $tweet = drupal_urlencode($tweet);
   $path = 'http://twitter.com/home';
   $text = t('Post to Twitter');
-  $image = '<img src="http://assets1.twitter.com/images/favicon.ico" alt='. $text .' />';
+  $image_location = drupal_get_path('module', 'tweet') .'/icon.png';
+  $image = '<img src="'. $base_url .'/'. variable_get('tweet_image', $image_location) .'" alt="'. $text .'" title="'. $text .'" />';
   if (!$type) {
     //Note that $type can be 'none', in which case nothing shows up.
     $type = variable_get('tweet_node', 'icon');
@@ -130,8 +134,8 @@ function _tweet_to_twitter($type = '', $title = 1, $nid = '', $q = '') {
   else if ($type == 'text') {
     $show = $text;
   }
-  $attributes = array('target' => '_blank', 'class' => 'tweet');
-  return array('title' => $show, 'href' => $path, 'attributes' => $attributes, 'query' => array('status' => $tweet), 'html' => TRUE);
+  $attributes = array('target' => '_blank', 'class' => 'tweet', 'rel' => 'nofollow');
+  return array('title' => $show, 'href' => $path, 'attributes' => $attributes, 'query' => 'status='. $tweet, 'html' => TRUE);
 }
 
 /**
@@ -184,13 +188,13 @@ function _tweet_make_url($q = '') {
  * Settings page.
  */
 function tweet_admin() {
-  $form['tweet_node'] = array(
+  $form['node_type'] = array(
     '#type' => 'select',
     '#title' => t('Type of link to show on nodes'),
     '#default_value' => variable_get('tweet_node', 'icon'),
     '#options' => array('icon' => 'icon', 'icon_text' => 'icon_text', 'text' => 'text', 'none' => 'none'),
   );
-  $form['tweet_teaser'] = array(
+  $form['teaser_type'] = array(
     '#type' => 'select',
     '#title' => t('Type of link to show on teasers'),
     '#default_value' => variable_get('tweet_teaser', 'none'),
@@ -201,7 +205,7 @@ function tweet_admin() {
   if ($node_types == _tweet_node_types()) {
     $node_types = array();
   }
-  $form['tweet_types'] = array(
+  $form['types'] = array(
     '#type' => 'select',
     '#multiple' => TRUE,
     '#title' => t('Node types on which to display link'),
@@ -215,8 +219,13 @@ function tweet_admin() {
     '#default_value' => variable_get('tweet_title', 1),
     '#options' => array(1 => 'Yes', 0 => 'No'),
   );
-  //Normally this is unnecessary, but for unknown reasons the form suddenly decided not to recognize the _submit function, so we specify it directly.
-  $form['#submit'][] = 'tweet_admin_submit';
+  $image_location = drupal_get_path('module', 'tweet') .'/icon.png';
+  $form['tweet_image'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Image'),
+    '#description' => t('Enter the URL for the image you want to show up if you allow images to appear in your links, relative to your Drupal installation.  Ex.: sites/all/modules/tweet/icon.png'),
+    '#default_value' => variable_get('tweet_image', $image_location),
+  );
   return system_settings_form($form);
 }
 
@@ -224,15 +233,16 @@ function tweet_admin() {
  * Submit handler for tweet_admin().
  * @see tweet_admin()
  */
-function tweet_admin_submit($form, &$form_state) {
-  variable_set('tweet_node', $form_state['values']['tweet_node']);
-  variable_set('tweet_teaser', $form_state['values']['tweet_teaser']);
-  variable_set('tweet_title', $form_state['values']['tweet_title']);
+function tweet_admin_submit($form_id, $form_values) {
+  variable_set('tweet_node', $form_values['node_type']);
+  variable_set('tweet_teaser', $form_values['teaser_type']);
+  variable_set('tweet_title', $form_values['title']);
+  variable_set('tweet_image', $form_values['tweet_image']);
   //If no types are selected, assign all types.
-  if ($form_state['values']['tweet_types'] == array()) {
-    $form_state['values']['tweet_types'] = _tweet_node_types();
+  if ($form_values['types'] == array()) {
+    $form_values['types'] = _tweet_node_types();
   }
-  variable_set('tweet_types', $form_state['values']['tweet_types']);
+  variable_set('tweet_types', $form_values['types']);
 }
 
 /**

@@ -62,7 +62,7 @@ $q
 == Installation ==
 ==================
    1. Install this module as usual (FTP the files to sites/all/modules, enable 
-        at admin/build/modules).  See http://drupal.org/node/176044 for help.
+        at admin/build/modules).  See http://drupal.org/node/70151 for help.
    2. If you want, go to admin/settings/tweet to change some minor 
         settings. The defaults should work for most people.
 

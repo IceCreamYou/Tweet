@@ -10,6 +10,7 @@
  * Implementation of hook_uninstall().
  */
 function tweet_uninstall() {
+  variable_del('tweet_image');
   variable_del('tweet_teaser');
   variable_del('tweet_types');
   variable_del('tweet_node');
