@@ -138,7 +138,15 @@ function _tweet_to_twitter($type = '', $title = 1, $nid = '', $q = '') {
   else if ($type == 'text') {
     $show = $text;
   }
-  $attributes = array('target' => '_blank', 'class' => 'tweet', 'rel' => 'nofollow');
+  $attributes = array('class' => 'tweet', 'rel' => 'nofollow');
+  if (variable_get('tweet_new_window', 'target') == 'target') {
+    $attributes['target'] = '_blank';
+  }
+  else if (variable_get('tweet_new_window', 'target') == 'js') {
+    $attributes['onClick'] = "window.open('$path?status=$tweet','twitter','')";
+    $path = $_GET['q'];
+    $tweet = 'sent';
+  }
   return array('title' => $show, 'href' => $path, 'attributes' => $attributes, 'query' => 'status='. $tweet, 'html' => TRUE);
 }
 
@@ -204,6 +212,12 @@ function tweet_admin() {
     '#default_value' => variable_get('tweet_teaser', 'none'),
     '#options' => array('icon' => 'icon', 'icon_text' => 'icon_text', 'text' => 'text', 'none' => 'none'),
   );
+  $form['title'] = array(
+    '#type' => 'select',
+    '#title' => t('Include page title in tweet'),
+    '#default_value' => variable_get('tweet_title', 1),
+    '#options' => array(1 => 'Yes', 0 => 'No'),
+  );
   $node_types = variable_get('tweet_types', array());
   //If all types are selected, un-select them, because the system will still save the result as all selected and it looks better.
   if ($node_types == _tweet_node_types()) {
@@ -217,11 +231,11 @@ function tweet_admin() {
     '#default_value' => $node_types,
     '#options' => _tweet_node_types(),
   );
-  $form['title'] = array(
-    '#type' => 'select',
-    '#title' => t('Include page title in tweet'),
-    '#default_value' => variable_get('tweet_title', 1),
-    '#options' => array(1 => 'Yes', 0 => 'No'),
+  $form['tweet_new_window'] = array(
+    '#type' => 'radios',
+    '#title' => t('Open Twitter'),
+    '#default_value' => variable_get('tweet_new_window', 'target'),
+    '#options' => array(0 => t('In same window'), 'target' => t('In new window with target="_blank" (not XHTML 1.0 Strict compliant)'), 'js' => t('In new window with JavaScript')),
   );
   $image_location = drupal_get_path('module', 'tweet') .'/icon.png';
   $form['tweet_image'] = array(
@@ -248,6 +262,7 @@ function tweet_admin_submit($form_id, $form_values) {
   variable_set('tweet_node', $form_values['node_type']);
   variable_set('tweet_teaser', $form_values['teaser_type']);
   variable_set('tweet_title', $form_values['title']);
+  variable_set('tweet_new_window', $form_values['tweet_new_window']);
   variable_set('tweet_image', $form_values['tweet_image']);
   variable_set('tweet_hashtag', $form_values['tweet_hashtag']);
   //If no types are selected, assign all types.
