@@ -12,6 +12,8 @@
 function tweet_uninstall() {
   variable_del('tweet_new_window');
   variable_del('tweet_hashtag');
+  variable_del('tweet_method');
+  variable_del('tweet_service');
   variable_del('tweet_image');
   variable_del('tweet_teaser');
   variable_del('tweet_types');

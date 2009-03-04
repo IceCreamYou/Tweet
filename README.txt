@@ -3,15 +3,16 @@
 =============
 == Summary ==
 =============
-This module provides links to post pages to twitter.  Clicking the links will
-open a new window or tab with twitter in it.  The tweet will be in focus and
-will contain the URL of the relevant page on your site.  It can optionally also
-contain the title of the relevant page.  The URL will be abbreviated to 16
-characters using the service at th8.us (much shorter than TinyURL's 25 chars).
+This module provides links to post pages to twitter. Clicking the links will
+open a new window or tab with twitter in it. The tweet will be in focus and will
+contain the URL of the relevant page on your site.  It can optionally also
+contain the title of the relevant page. The URL will be abbreviated using the
+service at th8.us (shortest) or TinyURL (longer).
+
 URLs and titles will be for either the node which is being displayed as a
-teaser or for the current page.  Multiple links can appear on the same page,
-as on a View of teasers.  By default, links appear in the Links section when
-viewing full nodes or teasers.
+teaser or for the current page. Multiple links can appear on the same page, as
+on a View of teasers. By default, links appear in the Links section when viewing
+full nodes or teasers.
 
 Administrators can choose whether to show the link as an icon, an icon and
 text, or just text.  Options can be chosen separately for nodes and teasers.
@@ -24,11 +25,11 @@ explanation is below.
 ==================
 == Requirements ==
 ==================
-In order to use this module, your PHP must support the file_get_contents
-function.  (If you're not sure, your PHP probably does support it.)  For more
-information visit http://us.php.net/file_get_contents.  In particular, note
-that Microsoft IIS will throw errors on pages with SSL on PHP 4.3.7 and
-earlier.
+There are no requirements for using this module, but it is recommended that your
+PHP installation is compiled with either the file_get_contents() function, cURL,
+or both.  If you're not sure, your PHP probably supports at least
+file_get_contents(), and most installations support cURL as well.  For more
+information visit http://php.net/file_get_contents and http://php.net/curl.
 
 =====================
 == Development/API ==
