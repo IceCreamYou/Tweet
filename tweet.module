@@ -23,7 +23,7 @@ function tweet_help($path, $arg) {
  * Implementation of hook_link().
  */
 function tweet_link($type, $node = NULL, $teaser = FALSE) {
-  if ($type == 'node' && in_array($node->type, variable_get('tweet_types', _tweet_node_types()))) {
+  if ($type == 'node' && in_array($node->type, variable_get('tweet_types', _tweet_node_types())) && !_tweet_exclude($node->nid)) {
     $title = variable_get('tweet_title', 1);
     if (!$teaser) {
       $link_type = variable_get('tweet_node', 'icon');
@@ -53,6 +53,7 @@ function tweet_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('tweet_admin'),
     'access arguments' => array('access administration pages'),
+    'file' => 'tweet.admin.inc',
   );
   return $items;
 }
@@ -75,7 +76,7 @@ function tweet_to_twitter($type = 'icon', $title = TRUE, $nid = '', $q = '') {
  *   Required if display options for nodes are set to 'none' on the settings page.
  * @param $title
  *   If FALSE, no page title will be included in the twitter message; if TRUE, the pagetitle will be included and will be determined from the current page or the NID passed to the function.
- *   If $title is a string and it is not empty, the string will be used as the title.  @title is replaced with the current page's title or the title as determined from the NID passed to the function.
+ *   If $title is a string, the string will be used as the title.  @title is replaced with the current page's title or the title as determined from the NID passed to the function.
  *   If 1, the default from the settings page will be used.
  * @param $nid
  *   The NID of the node for which the twitter link should be constructed.
@@ -173,11 +174,12 @@ function _tweet_get_title($nid = '') {
 }
 
 /**
- * Retrieves the abbreviated URL from th8.us.  Requires that PHP was compiled with file_get_contents available.
+ * Retrieves and beautifies the abbreviated URL.
  *
  * @param $q
  *   The URL of the page for which to create the abbreviated URL.  If not passed uses the current page.
  * @see _tweet_to_twitter()
+ * @see _tweet_get_url()
  * @return
  *   An abbreviated URL.
  */
@@ -186,33 +188,66 @@ function _tweet_make_url($q = '') {
     global $base_url;
     $q = $base_url . base_path() . $_GET['q'];
   }
+  $cached = cache_get($q);
+  if ($cached->data) {
+    return $cached->data;
+  }
   $url = _tweet_get_url($q);
-  //Replace "http://" with "www." because it's shorter.
-  $url = drupal_substr($url, 7);
-  $url = 'www.'. $url;
+  //If the primary service fails, try the secondary service.
+  if (!$url) {
+    $url = _tweet_get_url($q, variable_get('tweet_service_backup', 'TinyURL'));
+    //If the secondary service fails, use the original URL.
+    if (!$url) {
+      $url = $q;
+    }
+  }
+  //Replace "http://" with "www." if the URL is abbreviated because it's shorter.
+  if ($url != $q) {
+    $url = drupal_substr($url, 7);
+    $url = 'www.'. $url;
+  }
+  $expire = time() + (60 * 60 * 24 * 7 * 3);
+  cache_set($q, $url, 'cache', $expire);
   return $url;
 }
 
 /**
- * Retrieves an abbreviated URL using either CURL or PHP from the appropriate service.
+ * Gets an abbreviated URL using either CURL or PHP from the appropriate service.
  * Times out after three (3) seconds.
  *
  * @param $original
- *   The URL of the page for which to retrieve the abbreviated URL.  If not passed, uses the current page.
+ *   The URL of the page for which to retrieve the abbreviated URL
  * @param $service
  *   The service to use to abbreviate the URL.
+ *   Available services include hex.io, idek.net, is.gd, lin.cr, ri.ms, th8.us, and TinyURL.
  * @see _tweet_make_url()
  * @return
  *   An abbreviated URL.
  */
 function _tweet_get_url($original, $service = '') {
   if (!$service) {
-    $service = variable_get('tweet_service', 'Th8');
+    $service = variable_get('tweet_service', 'is.gd');
   }
-  if ($service == 'Th8' || $service == 'TinyURLr') {
+
+  if ($service == 'hex.io') {
+    $url = 'http://hex.io/api-create.php?url='. $original;
+  }
+  else if ($service == 'idek.net') {
+    $url = 'http://idek.net/c.php?idek-api=true&idek-ref=drupal_tweet_module&idek-url='. $original;
+  }
+  else if ($service == 'is.gd') {
+    $url = 'http://is.gd/api.php?longurl='. $original;
+  }
+  else if ($service == 'lin.cr') {
+    $url = 'http://lin.cr/?mode=api&full=1&l='. $original;
+  }
+  else if ($service == 'ri.ms') {
+    $url = 'http://ri.ms/api-create.php?url='. $original;
+  }
+  else if ($service == 'th8.us') {
     $url = 'http://th8.us/api.php?url='. $original;
   }
-  else if ($service == 'TinyURL' || $service == 'Th8r') {
+  else if ($service == 'TinyURL') {
     $url = 'http://tinyurl.com/api-create.php?url='. $original;
   }
   else {
@@ -237,135 +272,30 @@ function _tweet_get_url($original, $service = '') {
   if ($contents && drupal_substr($contents, 0, 7) == 'http://') {
     return $contents;
   }
-  watchdog('tweet', '%method failed to return an abbreviated URL from %service.', array('%method' => drupal_strtoupper(variable_get('tweet_method', 'curl')), '%service' => variable_get('tweet_service', 'Th8')), WATCHDOG_NOTICE, $url);
-  //If one service failed, try the other. If both services fail, this will return the original URL.
-  $service .= 'r';
-  return _tweet_get_url($original, $service);
+  watchdog('tweet', '%method failed to return an abbreviated URL from %service.', array('%method' => drupal_strtoupper(variable_get('tweet_method', 'curl')), '%service' => variable_get('tweet_service', 'is.gd')), WATCHDOG_NOTICE, $url);
+  return FALSE;
 }
 
 /**
- * Settings page.
+ * Excludes certain Node IDs from displaying links.
+ *
+ * @param $nid
+ *   The NID to check for exclusion.
+ * @return
+ *   TRUE if the node should be excluded, or FALSE if it should not.
  */
-function tweet_admin() {
-  $form['tweet_node'] = array(
-    '#type' => 'select',
-    '#title' => t('Type of link to show on nodes'),
-    '#default_value' => variable_get('tweet_node', 'icon'),
-    '#options' => array('icon' => 'icon', 'icon_text' => 'icon_text', 'text' => 'text', 'none' => 'none'),
-  );
-  $form['tweet_teaser'] = array(
-    '#type' => 'select',
-    '#title' => t('Type of link to show on teasers'),
-    '#default_value' => variable_get('tweet_teaser', 'none'),
-    '#options' => array('icon' => 'icon', 'icon_text' => 'icon_text', 'text' => 'text', 'none' => 'none'),
-  );
-  $form['tweet_title'] = array(
-    '#type' => 'select',
-    '#title' => t('Include page title in tweet'),
-    '#default_value' => variable_get('tweet_title', 1),
-    '#options' => array(1 => 'Yes', 0 => 'No'),
-  );
-  $form['tweet_new_window'] = array(
-    '#type' => 'radios',
-    '#title' => t('Open Twitter'),
-    '#default_value' => variable_get('tweet_new_window', 'target'),
-    '#options' => array(0 => t('In same window'), 'target' => t('In new window with target="_blank" (not XHTML 1.0 Strict compliant)'), 'js' => t('In new window with JavaScript')),
-  );
-  $methods = array();
-  if (function_exists('file_get_contents')) {
-    $methods['php'] = t('PHP');
+function _tweet_exclude($nid) {
+  $exclude = explode(',', variable_get('tweet_exclude', ''));
+  $excludes = array();
+  foreach ($exclude as $check) {
+    $excludes[] = trim($check);
   }
-  if (function_exists('curl_exec')) {
-    $methods['curl'] = t('cURL');
-  }
-  if (empty($methods)) {
-    if (variable_get('tweet_method', 'curl') != 'none') {
-      variable_set('tweet_method', 'none');
+  if (!empty($excludes)) {
+    if (in_array($nid, $excludes)) {
+      return TRUE;
     }
-    $form['tweet_method'] = array(
-      '#type' => 'radios',
-      '#title' => t('Method'),
-      '#description' => '<p>'. t('The method to use to retrieve the abbreviated URL.') .'</p>'.
-        '<p><strong>'. t('Your PHP installation does not support the URL abbreviation feature of the Tweet module.') .'</strong> '.
-        t('You must compile PHP with either the cURL library or the file_get_contents() function to use this option.') .'</p>',
-      '#default_value' => 'none',
-      '#options' => array('none' => t('None')),
-      '#disabled' => TRUE,
-    );
-    $form['tweet_service'] = array(
-      '#type' => 'radios',
-      '#title' => t('Service'),
-      '#description' => t('The service to use to create the abbreviated URL.'),
-      '#default_value' => 'none',
-      '#options' => array('none' => t('None')),
-    );
   }
-  else {
-    $form['tweet_method'] = array(
-      '#type' => 'radios',
-      '#title' => t('Method'),
-      '#description' => t('The method to use to retrieve the abbreviated URL.'),
-      '#default_value' => variable_get('tweet_method', 'curl'),
-      '#options' => $methods,
-    );
-    $form['tweet_service'] = array(
-      '#type' => 'radios',
-      '#title' => t('Service'),
-      '#description' => t('The service to use to create the abbreviated URL.'),
-      '#default_value' => variable_get('tweet_service', 'Th8'),
-      '#options' => array('none' => t('None'), 'Th8' => t('Th8.us (shortest)'), 'TinyURL' => t('TinyURL (longer)')),
-    );
-  }
-  $node_types = variable_get('tweet_types', array());
-  //If all types are selected, un-select them, because the system will still save the result as all selected and it looks better.
-  if ($node_types == _tweet_node_types()) {
-    $node_types = array();
-  }
-  $form['tweet_types'] = array(
-    '#type' => 'select',
-    '#multiple' => TRUE,
-    '#title' => t('Node types on which to display link'),
-    '#description' => t('If no types are selected, the link will appear on all types.  To stop links from appearing on all nodes, choose "none" in the teaser and node display options above.'),
-    '#default_value' => $node_types,
-    '#options' => _tweet_node_types(),
-  );
-  $image_location = drupal_get_path('module', 'tweet') .'/icon.png';
-  $form['tweet_image'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Image'),
-    '#description' => t('Enter the URL for the image you want to show up if you allow images to appear in your links, relative to your Drupal installation.  Ex.: sites/all/modules/tweet/icon.png'),
-    '#default_value' => variable_get('tweet_image', $image_location),
-  );
-  $form['tweet_hashtag'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Suffix'),
-    '#description' => t('If you include the title in your tweets, this text will be automatically appended to the end of the tweet.  This allows you to add hashtags if you wish.'),
-    '#maxlength' => 123,
-    '#default_value' => variable_get('tweet_hashtag', ''),
-  );
-  //Normally this is unnecessary, but for unknown reasons the form suddenly decided not to recognize the _submit function, so we specify it directly.
-  $form['#submit'][] = 'tweet_admin_submit';
-  return system_settings_form($form);
-}
-
-/**
- * Submit handler for tweet_admin().
- * @see tweet_admin()
- */
-function tweet_admin_submit($form, &$form_state) {
-  variable_set('tweet_node', $form_state['values']['tweet_node']);
-  variable_set('tweet_teaser', $form_state['values']['tweet_teaser']);
-  variable_set('tweet_title', $form_state['values']['tweet_title']);
-  variable_set('tweet_new_window', $form_state['values']['tweet_new_window']);
-  variable_set('tweet_method', $form_state['values']['tweet_method']);
-  variable_set('tweet_service', $form_state['values']['tweet_service']);
-  variable_set('tweet_image', $form_state['values']['tweet_image']);
-  variable_set('tweet_hashtag', $form_state['values']['tweet_hashtag']);
-  //If no types are selected, assign all types.
-  if ($form_state['values']['tweet_types'] == array()) {
-    $form_state['values']['tweet_types'] = _tweet_node_types();
-  }
-  variable_set('tweet_types', $form_state['values']['tweet_types']);
+  return FALSE;
 }
 
 /**
