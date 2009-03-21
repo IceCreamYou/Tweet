@@ -3,7 +3,7 @@
 
 /**
  * @file
- *   Allows adding images ("decos") that can be "bought" with Userpoints.
+ *   Builds links to post pages to twitter.
  */
 
 /**
@@ -21,12 +21,6 @@ function tweet_admin() {
     '#title' => t('Type of link to show on teasers'),
     '#default_value' => variable_get('tweet_teaser', 'none'),
     '#options' => array('icon' => 'icon', 'icon_text' => 'icon_text', 'text' => 'text', 'none' => 'none'),
-  );
-  $form['tweet_title'] = array(
-    '#type' => 'select',
-    '#title' => t('Include page title in tweet'),
-    '#default_value' => variable_get('tweet_title', 1),
-    '#options' => array(1 => 'Yes', 0 => 'No'),
   );
   $form['tweet_new_window'] = array(
     '#type' => 'radios',
@@ -121,12 +115,12 @@ function tweet_admin() {
     '#description' => t('Enter the NIDs of nodes which should not have Tweet links, separated by commas.'),
     '#default_value' => variable_get('tweet_exclude', ''),
   );
-  $form['tweet_hashtag'] = array(
+  $form['tweet_format'] = array(
     '#type' => 'textfield',
-    '#title' => t('Suffix'),
-    '#description' => t('If you include the title in your tweets, this text will be automatically appended to the end of the tweet.  This allows you to add hashtags if you wish.'),
-    '#maxlength' => 123,
-    '#default_value' => variable_get('tweet_hashtag', ''),
+    '#title' => t('Format'),
+    '#description' => t('Manipulate the elements of the tweet by changing their order, removing them, or adding them (like hashtags).  You can use the case-insensitive tokens [url] and [title].'),
+    '#maxlength' => 140,
+    '#default_value' => variable_get('tweet_format', '[url] [title]'),
   );
   return system_settings_form($form);
 }
@@ -153,14 +147,13 @@ function tweet_admin_validate($form, &$form_state) {
 function tweet_admin_submit($form, &$form_state) {
   variable_set('tweet_node', $form_state['values']['tweet_node']);
   variable_set('tweet_teaser', $form_state['values']['tweet_teaser']);
-  variable_set('tweet_title', $form_state['values']['tweet_title']);
   variable_set('tweet_new_window', $form_state['values']['tweet_new_window']);
   variable_set('tweet_method', $form_state['values']['tweet_method']);
   variable_set('tweet_service', $form_state['values']['tweet_service']);
   variable_set('tweet_service_backup', $form_state['values']['tweet_service_backup']);
   variable_set('tweet_image', $form_state['values']['tweet_image']);
   variable_set('tweet_exclude', $form_state['values']['tweet_exclude']);
-  variable_set('tweet_hashtag', $form_state['values']['tweet_hashtag']);
+  variable_set('tweet_format', $form_state['values']['tweet_format']);
   //If no types are selected, assign all types.
   if ($form_state['values']['tweet_types'] == array()) {
     $form_state['values']['tweet_types'] = _tweet_node_types();

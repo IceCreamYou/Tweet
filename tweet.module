@@ -28,14 +28,14 @@ function tweet_link($type, $node = NULL, $teaser = FALSE) {
     if (!$teaser) {
       $link_type = variable_get('tweet_node', 'icon');
       if ($link_type != 'none') {
-        $links['tweet'] = _tweet_to_twitter($link_type, $title, $node->nid);
+        $links['tweet'] = _tweet_to_twitter($link_type, '', $node->nid);
         return $links;
       }
     }
     else {
       $link_type = variable_get('tweet_teaser', 'none');
       if ($link_type != 'none') {
-        $links['tweet'] = _tweet_to_twitter($link_type, TRUE, $node->nid);
+        $links['tweet'] = _tweet_to_twitter($link_type, '', $node->nid);
         return $links;
       }
     }
@@ -74,10 +74,9 @@ function tweet_to_twitter($type = 'icon', $title = TRUE, $nid = '', $q = '') {
  *   Specifies what will show up in the link: the twitter icon, the twitter icon and text, or just text.
  *   Pass 'icon' to show just the icon, 'icon_text' to show the icon and text, and 'text' to show just the text.
  *   Required if display options for nodes are set to 'none' on the settings page.
- * @param $title
- *   If FALSE, no page title will be included in the twitter message; if TRUE, the pagetitle will be included and will be determined from the current page or the NID passed to the function.
- *   If $title is a string, the string will be used as the title.  @title is replaced with the current page's title or the title as determined from the NID passed to the function.
- *   If 1, the default from the settings page will be used.
+ * @param $format
+ *   A string representing the tweet text, optionally with the case-insensitive tokens [url] and [title].
+ *   If not passed, the format from the settings page will be used.
  * @param $nid
  *   The NID of the node for which the twitter link should be constructed.
  * @param $q
@@ -85,43 +84,30 @@ function tweet_to_twitter($type = 'icon', $title = TRUE, $nid = '', $q = '') {
  *   If this is not the current page, the title must be set manually, or it will be incorrect.
  * @see _tweet_make_url()
  * @see _tweet_get_title()
+ * @see _tweet_process()
  * @see tweet_to_twitter()
  * @see tweet_link()
  * @return
- *   A themed link to post the specified or current page to twitter, optionally including the page title.
+ *   A themed link to post the specified or current page to twitter.
  */
-function _tweet_to_twitter($type = '', $title = 1, $nid = '', $q = '') {
-  $hashtag = '';
-  if (variable_get('tweet_hashtag', '')) {
-    //It is necessary to manually escape the # character because if unescaped it will not be included in the message and if drupal_urlencoded() it gets encoded twice.
-    $hashtag = ' '. str_replace('#', '%23', variable_get('tweet_hashtag', ''));
-  }
+function _tweet_to_twitter($type = '', $format = '', $nid = '', $q = '') {
   if ($nid && !$q) {
     global $base_url, $base_root, $base_path;
     $alias = drupal_get_path_alias('node/'. $nid);
     $q = $base_root . $base_path . $alias;
   }
-  $tweet = _tweet_make_url($q);
-  if ($title === 1 || $title === '1') {
-    $title = variable_get('tweet_title', 1);
+  $url = _tweet_make_url($q);
+  $title = _tweet_get_title($nid);
+
+  if (!$format) {
+    $format = variable_get('tweet_format', '[url] [title]');
   }
-  if ($title) {
-    if (is_string($title) && $title !== '1') {
-      $title = str_replace('@title', _tweet_get_title($nid), $title);
-      $tweet .= ' '. $title . $hashtag;
-    }
-    else {
-      $tweet .= ' '. _tweet_get_title($nid) . $hashtag;
-    }
-  }
-  else {
-    //Add a space even though titles are not included so the user can begin typing a description right away.
-    $tweet .= ' ';
-  }
+  $tweet = _tweet_process($format, array('[url]' => $url, '[title]' => $title));
+
   $path = 'http://twitter.com/home';
   $text = t('Post to Twitter');
   $image_location = drupal_get_path('module', 'tweet') .'/icon.png';
-  $image = '<img src="'. $base_url .'/'. variable_get('tweet_image', $image_location) .'" alt="'. $text .'" title="'. $text .'" />';
+  $image = '<img src="'. $base_url .'/'. check_plain(variable_get('tweet_image', $image_location)) .'" alt="'. $text .'" title="'. $text .'" />';
   if (!$type) {
     //Note that $type can be 'none', in which case nothing shows up.
     $type = variable_get('tweet_node', 'icon');
@@ -145,6 +131,31 @@ function _tweet_to_twitter($type = '', $title = 1, $nid = '', $q = '') {
     $tweet = 'sent';
   }
   return array('title' => $show, 'href' => $path, 'attributes' => $attributes, 'query' => 'status='. $tweet, 'html' => TRUE);
+}
+
+/**
+ * Determines what will be in the tweet itself.
+ *
+ * @param $format
+ *   A string containing the text of the tweet before it gets processed.
+ * @param $tokens
+ *   An associative array where keys represent text that will be replaced by their value in $format.
+ * @see _tweet_to_twitter()
+ * @return
+ *   The URL-ready tweet text.
+ */
+function _tweet_process($format = '', $tokens = array()) {
+  if (!$format) {
+    $format = variable_get('tweet_format', '[url] [title]');
+  }
+  foreach ($tokens as $search => $replace) {
+    $format = str_ireplace($search, $replace, $format);
+  }
+  $format = drupal_urlencode($format);
+  //The #, &, and / characters get double-encoded by drupal_urlencode, but they must appear single-encoded for Twitter to recognize them.
+  //Spaces are manually encoded to plus signs for clarity of whitespace at the end of the tweet.
+  $format = str_replace(array('%2523', '%2526', '%252F', '%20'), array('%23', '%26', '%2F', '+'), $format);
+  return $format;
 }
 
 /**
