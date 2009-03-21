@@ -10,8 +10,10 @@
  * Implementation of hook_uninstall().
  */
 function tweet_uninstall() {
+  variable_del('tweet_service_backup');
   variable_del('tweet_new_window');
   variable_del('tweet_hashtag');
+  variable_del('tweet_exclude');
   variable_del('tweet_method');
   variable_del('tweet_service');
   variable_del('tweet_image');
