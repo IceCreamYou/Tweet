@@ -5,9 +5,10 @@
 =============
 This module provides links to post pages to twitter. Clicking the links will
 open a new window or tab with twitter in it. The tweet will be in focus and will
-contain the URL of the relevant page on your site.  It can optionally also
-contain the title of the relevant page. The URL will be abbreviated using one of
-these services: hex.io, idek.net, is.gd, lin.cr, ri.ms, th8.us, or TinyURL.
+contain a customizable string (making hashtags possible) which can
+programmatically include the relevantURL and title. The URL will be abbreviated
+using one of these services: hex.io, idek.net, is.gd, lin.cr, ri.ms, th8.us, or
+TinyURL.
 
 URLs and titles will be for either the node which is being displayed as a
 teaser or for the current page. Multiple links can appear on the same page, as
@@ -41,18 +42,19 @@ you need according to the following arguments.  All arguments are optional
 unless otherwise noted.  If no arguments are passed the link constructed will
 be for the current page according to your settings.
 
+If you want more control, the _tweet_to_twitter() function takes the same
+arguments and returns an array in the format required by hook_link()
+(http://api.drupal.org/api/function/hook_link/5).
+
 $type
   Specifies what will show up in the link: the twitter icon, the twitter icon
   and text, or just text. Pass 'icon' to show just the icon, 'icon_text' to
   show the icon and text, and 'text' to show just the text. Required if display
   options for nodes are set to 'none' on the settings page.
-$title
-  If FALSE, no page title will be included in the twitter message; if TRUE, the
-  pagetitle will be included and will be determined from the current page or
-  the NID passed to the function. If $title is a string and it is not empty,
-  the string will be used as the title.  In this case @title is replaced with
-  the current page's title or the title as determined from the NID passed to
-  the function. If 1, the default from the settings page will be used.
+$format
+  A string representing the tweet text, optionally with the case-insensitive
+  tokens [url] and [title]. If not passed, the format from the settings page
+  will be used.
 $nid
   The NID of the node for which the twitter link should be constructed.
 $q
