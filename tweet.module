@@ -240,36 +240,34 @@ function _tweet_get_url($original, $service = '') {
     $service = variable_get('tweet_service', 'is.gd');
   }
 
-  if ($service == 'hex.io') {
-    $url = 'http://hex.io/api-create.php?url='. $original;
+  $skip = FALSE;
+  $services = module_invoke_all('tweet_service', $original);
+  foreach ($services as $name => $api) {
+    if ($service == $name) {
+      if (is_string($api)) {
+        $url = $api . $original;
+        break;
+      }
+      else if (is_array($api) && $api['custom'] == FALSE) {
+        $url = $api['url'] . $original;
+        break;
+      }
+      else if (is_array($api) && $api['custom'] == TRUE) {
+        $url = $api['url'];
+        $skip = TRUE;
+      }
+    }
   }
-  else if ($service == 'idek.net') {
-    $url = 'http://idek.net/c.php?idek-api=true&idek-ref=drupal_tweet_module&idek-url='. $original;
-  }
-  else if ($service == 'is.gd') {
-    $url = 'http://is.gd/api.php?longurl='. $original;
-  }
-  else if ($service == 'lin.cr') {
-    $url = 'http://lin.cr/?mode=api&full=1&l='. $original;
-  }
-  else if ($service == 'ri.ms') {
-    $url = 'http://ri.ms/api-create.php?url='. $original;
-  }
-  else if ($service == 'th8.us') {
-    $url = 'http://th8.us/api.php?url='. $original;
-  }
-  else if ($service == 'TinyURL') {
-    $url = 'http://tinyurl.com/api-create.php?url='. $original;
-  }
-  else {
+  //If the service isn't found, use the original.
+  if (!$url) {
     return $original;
   }
 
-  if (variable_get('tweet_method', 'curl') == 'php') {
+  if (variable_get('tweet_method', 'curl') == 'php' && !$skip) {
     $context = stream_context_create(array('http' => array('timeout' => 3))); 
     $contents = file_get_contents($url, 0, $context);
   }
-  else if (variable_get('tweet_method', 'curl') == 'curl') {
+  else if (variable_get('tweet_method', 'curl') == 'curl' && !$skip) {
     $c = curl_init();
     curl_setopt($c, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($c, CURLOPT_CONNECTTIMEOUT, 3);
@@ -283,8 +281,28 @@ function _tweet_get_url($original, $service = '') {
   if ($contents && drupal_substr($contents, 0, 7) == 'http://') {
     return $contents;
   }
-  watchdog('tweet', '%method failed to return an abbreviated URL from %service.', array('%method' => drupal_strtoupper(variable_get('tweet_method', 'curl')), '%service' => variable_get('tweet_service', 'is.gd')), WATCHDOG_NOTICE, $url);
+  $method = drupal_strtoupper(variable_get('tweet_method', 'curl'));
+  if ($skip) {
+    $method = t('A custom method');
+  }
+  watchdog('tweet', '%method failed to return an abbreviated URL from %service.', array('%method' => $method, '%service' => $service), WATCHDOG_NOTICE, $url);
   return FALSE;
+}
+
+/**
+ * Implementation of hook_tweet_service().
+ */
+function tweet_tweet_service($original) {
+  return array(
+    'hex.io' => 'http://hex.io/api-create.php?url=',
+    'idek.net' => 'http://idek.net/c.php?idek-api=true&idek-ref=drupal_tweet_module&idek-url=',
+    'is.gd' => 'http://is.gd/api.php?longurl=',
+    'lin.cr' => 'http://lin.cr/?mode=api&full=1&l=',
+    'ri.ms' => 'http://ri.ms/api-create.php?url=',
+    'th8.us' => 'http://th8.us/api.php?url=',
+    'TinyURL' => 'http://tinyurl.com/api-create.php?url=',
+    'tr.im' => 'http://api.tr.im/api/trim_simple?url=',
+  );
 }
 
 /**

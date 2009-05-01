@@ -7,8 +7,8 @@ This module provides links to post pages to twitter. Clicking the links will
 open a new window or tab with twitter in it. The tweet will be in focus and will
 contain a customizable string (making hashtags possible) which can
 programmatically include the relevantURL and title. The URL will be abbreviated
-using one of these services: hex.io, idek.net, is.gd, lin.cr, ri.ms, th8.us, or
-TinyURL.
+using one of these services: hex.io, idek.net, is.gd, lin.cr, ri.ms, th8.us,
+TinyURL, or tr.im.
 
 URLs and titles will be for either the node which is being displayed as a
 teaser or for the current page. Multiple links can appear on the same page, as
@@ -62,13 +62,35 @@ $q
   constructed. If this is not the current page, the _title_ MUST be set
   manually, or it will be incorrect.
 
+----
+
+You can add additional URL abbreviation services to Tweet using
+hook_tweet_service($original). Using this hook will expose your service to the
+Tweet Settings page. If you choose the service provided by your hook there,
+Tweet will process URL abbreviation as described below. See
+tweet_tweet_service() for an example.
+
+The hook should return an array keyed by the name of the service. The value of
+each array element can be the URL of the service's API page that returns only
+the abbreviated URL, without the site's URL appended:
+'http://tinyurl.com/api-create.php?url='. If this is the case, Tweet will
+automatically retrieve the abbreviated URL from the service.
+
+The value of each array element can also be an array structured like this:
+array('custom' => TRUE, 'url' => 'http://tinyurl.com/api-create.php?url='). If
+'custom' is FALSE, Tweet will treat 'url' as if it was passed like a string (as
+explained above). If 'custom' is TRUE, Tweet will assume the 'url' has already
+been processed and will not attempt to abbreviate anything. This behavior allows
+you to do your own processing--for example, you could retrieve abbreviated URLs
+using JSON or XML in this manner. The 'url' returned in this case should already
+be abbreviated (the parameter $original is the URL that should be abbreviated).
+
 ==================
 == Installation ==
 ==================
    1. Install this module as usual (FTP the files to sites/all/modules, enable 
         at admin/build/modules).  See http://drupal.org/node/176044 for help.
-   2. If you want, go to admin/settings/tweet to change some minor 
-        settings. The defaults should work for most people.
+   2. If you want, go to admin/settings/tweet to change the module's settings.
 
 ===========
 == Links ==

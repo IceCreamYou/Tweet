@@ -72,7 +72,11 @@ function tweet_admin() {
       '#default_value' => variable_get('tweet_method', 'curl'),
       '#options' => $methods,
     );
-    $services = drupal_map_assoc(array('hex.io', 'idek.net', 'is.gd', 'lin.cr', 'ri.ms', 'th8.us', 'TinyURL'));
+    $all_services = module_invoke_all('tweet_service', $original);
+    $services = array();
+    foreach ($all_services as $key => $value) {
+      $services[$key] = $key;
+    }
     $services['none'] = t('None');
     $form['tweet_service'] = array(
       '#type' => 'select',
