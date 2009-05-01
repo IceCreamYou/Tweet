@@ -230,7 +230,7 @@ function _tweet_make_url($q = '') {
  *   The URL of the page for which to retrieve the abbreviated URL
  * @param $service
  *   The service to use to abbreviate the URL.
- *   Available services include hex.io, idek.net, is.gd, lin.cr, ri.ms, th8.us, and TinyURL.
+ *   For services available by default, see tweet_tweet_service().
  * @see _tweet_make_url()
  * @return
  *   An abbreviated URL.
