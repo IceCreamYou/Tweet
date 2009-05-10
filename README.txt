@@ -7,8 +7,8 @@ This module provides links to post pages to twitter. Clicking the links will
 open a new window or tab with twitter in it. The tweet will be in focus and will
 contain a customizable string (making hashtags possible) which can
 programmatically include the relevantURL and title. The URL will be abbreviated
-using one of these services: hex.io, idek.net, is.gd, lin.cr, ri.ms, th8.us,
-TinyURL, or tr.im.
+using one of these services: cli.gs, hex.io, idek.net, is.gd, lin.cr, Metamark,
+PiURL, ri.ms, short.ie, th8.us, TinyURL, tr.im, urlb.at, or urlCover.
 
 URLs and titles will be for either the node which is being displayed as a
 teaser or for the current page. Multiple links can appear on the same page, as
@@ -62,7 +62,9 @@ $q
   constructed. If this is not the current page, the _title_ MUST be set
   manually, or it will be incorrect.
 
-----
+-----
+Hooks
+-----
 
 You can add additional URL abbreviation services to Tweet using
 hook_tweet_service($original). Using this hook will expose your service to the
@@ -82,8 +84,12 @@ array('custom' => TRUE, 'url' => 'http://tinyurl.com/api-create.php?url='). If
 explained above). If 'custom' is TRUE, Tweet will assume the 'url' has already
 been processed and will not attempt to abbreviate anything. This behavior allows
 you to do your own processing--for example, you could retrieve abbreviated URLs
-using JSON or XML in this manner. The 'url' returned in this case should already
-be abbreviated (the parameter $original is the URL that should be abbreviated).
+using JSON or POST in this manner. The 'url' in this case should already be
+abbreviated (the parameter $original is the URL that should be abbreviated).
+
+If the 'custom' element is set to 'xml' then a 'tag' element must also be
+provided. Tweet will look for the value between the opening and closing 'tag'
+within the XML response at 'url' to retrieve the abbreviated URL.
 
 ==================
 == Installation ==
