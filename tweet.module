@@ -105,7 +105,8 @@ function _tweet_to_twitter($type = '', $format = '', $nid = '') {
   $path = 'http://twitter.com/home';
   $text = t('Post to Twitter');
   $image_location = drupal_get_path('module', 'tweet') .'/icon.png';
-  $image = '<img src="'. url(check_plain(variable_get('tweet_image', $image_location)), array('absolute' => TRUE)) .'" alt="'. $text .'" title="'. $text .'" />';
+  global $base_url;
+  $image = '<img src="'. $base_url . base_path() . check_plain(variable_get('tweet_image', $image_location)) .'" alt="'. $text .'" title="'. $text .'" />';
   if (!$type) {
     //Note that $type can be 'none', in which case nothing shows up.
     $type = variable_get('tweet_node', 'icon');
