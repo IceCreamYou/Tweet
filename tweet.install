@@ -9,32 +9,29 @@
 /**
  * Implementation of hook_update_N().
  */
-function hook_update_5200() {
-  $format = '[url] ';
-  if (variable_get('tweet_title', 1)) {
-    $format .= '[title]';
+function tweet_update_6300() {
+  if (module_exists('shorten')) {
+    $method = variable_get('tweet_method', 'curl');
+    variable_set('shorten_method', $method);
+    variable_del('tweet_method');
+
+    $service = variable_get('tweet_service', 'is.gd');
+    variable_set('shorten_service', $service);
+    variable_del('tweet_service');
+
+    $backup = variable_get('tweet_service_backup', 'TinyURL');
+    variable_set('shorten_service_backup', $backup);
+    variable_del('tweet_service_backup');
   }
-  if (variable_get('tweet_hashtag', '')) {
-    if (drupal_substr($format, -1, 1) != ' ') {
-      $format .= ' ';
-    }
-    $format .= variable_get('tweet_hashtag', '');
-  }
-  variable_set('tweet_format', $format);
-  variable_del('tweet_title', 1);
-  variable_del('tweet_hashtag', '');
-  return array();
+  return array(array('success' => TRUE, 'query' => t('Settings converted from Tweet to Shorten.')));
 }
 
 /**
  * Implementation of hook_uninstall().
  */
 function tweet_uninstall() {
-  variable_del('tweet_service_backup');
   variable_del('tweet_new_window');
   variable_del('tweet_exclude');
-  variable_del('tweet_method');
-  variable_del('tweet_service');
   variable_del('tweet_format');
   variable_del('tweet_image');
   variable_del('tweet_teaser');
