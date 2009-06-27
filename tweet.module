@@ -182,7 +182,9 @@ function _tweet_get_title($nid = '') {
     $title = drupal_get_title();
   }
   if (drupal_strlen($title) > 120) {
-    $title = drupal_substr($title, 0, 119) .'…';
+    //"\xE2\x80\xA6" is the UTF8 character sequence for the ellipsis, which must be enclosed in double quotes.
+    //Neither the literal binary character (…) nor the HTML entity (&hellip;) work on all operating systems.
+    $title = drupal_substr($title, 0, 119) ."\xE2\x80\xA6";
   }
   return $title;
 }
