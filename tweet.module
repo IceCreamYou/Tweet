@@ -48,7 +48,7 @@ function tweet_link($type, $node = NULL, $teaser = FALSE) {
 function tweet_menu() {
   $items = array();
   $items['admin/settings/tweet'] = array(
-    'title' => 'Tweet settings',
+    'title' => 'Tweet',
     'description' => 'Adjust certain display settings for Tweet.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('tweet_admin'),
@@ -127,7 +127,7 @@ function _tweet_to_twitter($type = '', $format = '', $nid = '') {
     $attributes['target'] = '_blank';
   }
   else if (variable_get('tweet_new_window', 'target') == 'js') {
-    $attributes['onClick'] = "window.open('$path?status=$tweet','twitter','')";
+    $attributes['onclick'] = "window.open('$path?status=$tweet','twitter','')";
     $path = $_GET['q'];
     $tweet = 'sent';
   }
