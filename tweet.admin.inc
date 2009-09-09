@@ -61,21 +61,19 @@ function tweet_admin() {
     '#maxlength' => 140,
     '#default_value' => variable_get('tweet_format', '[url] [title]'),
   );
+  $form['tweet_text'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Text of link'),
+    '#description' => t('This is only relevant if you picked a display format that uses text.'),
+    '#default_value' => variable_get('tweet_text', t('Post to Twitter')),
+  );
   return system_settings_form($form);
 }
 
 /**
  * Submit handler for tweet_admin().
- * @see tweet_admin()
- * @see tweet_admin_validate()
  */
 function tweet_admin_submit($form, &$form_state) {
-  variable_set('tweet_node', $form_state['values']['tweet_node']);
-  variable_set('tweet_teaser', $form_state['values']['tweet_teaser']);
-  variable_set('tweet_new_window', $form_state['values']['tweet_new_window']);
-  variable_set('tweet_image', $form_state['values']['tweet_image']);
-  variable_set('tweet_exclude', $form_state['values']['tweet_exclude']);
-  variable_set('tweet_format', $form_state['values']['tweet_format']);
   //If no types are selected, assign all types.
   if ($form_state['values']['tweet_types'] == array()) {
     $form_state['values']['tweet_types'] = _tweet_node_types();

@@ -106,7 +106,7 @@ function _tweet_to_twitter($type = '', $format = '', $nid = '') {
   $tweet = _tweet_process($format, array('[url]' => $url, '[title]' => $title));
 
   $path = 'http://twitter.com/home';
-  $text = t('Post to Twitter');
+  $text = (variable_get('tweet_text', t('Post to Twitter')) == t('Post to Twitter')) ? t('Post to Twitter') : variable_get('tweet_text', t('Post to Twitter'));
   $image_location = drupal_get_path('module', 'tweet') .'/icon.png';
   $image = theme('image', variable_get('tweet_image', $image_location), $text, $text);
   if (!$type) {

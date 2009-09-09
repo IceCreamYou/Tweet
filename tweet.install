@@ -33,8 +33,9 @@ function tweet_uninstall() {
   variable_del('tweet_new_window');
   variable_del('tweet_exclude');
   variable_del('tweet_format');
-  variable_del('tweet_image');
   variable_del('tweet_teaser');
+  variable_del('tweet_image');
   variable_del('tweet_types');
   variable_del('tweet_node');
+  variable_del('tweet_text');
 }
