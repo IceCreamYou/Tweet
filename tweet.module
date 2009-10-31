@@ -60,7 +60,6 @@ function tweet_menu() {
 
 /**
  * Returns a link from _tweet_to_twitter().
- * @see _tweet_to_twitter()
  */
 function tweet_to_twitter($type = 'icon', $title = TRUE, $nid = '') {
   $array = _tweet_to_twitter($type, $title, $nid);
@@ -116,17 +115,17 @@ function _tweet_to_twitter($type = '', $format = '', $nid = '') {
   if ($type == 'icon') {
     $show = $image;
   }
-  else if ($type == 'icon_text') {
+  elseif ($type == 'icon_text') {
     $show = $image .' '. $text;
   }
-  else if ($type == 'text') {
+  elseif ($type == 'text') {
     $show = $text;
   }
   $attributes = array('class' => 'tweet', 'rel' => 'nofollow');
   if (variable_get('tweet_new_window', 'target') == 'target') {
     $attributes['target'] = '_blank';
   }
-  else if (variable_get('tweet_new_window', 'target') == 'js') {
+  elseif (variable_get('tweet_new_window', 'target') == 'js') {
     $attributes['onclick'] = "window.open('$path?status=$tweet','twitter','')";
     $path = $_GET['q'];
     $tweet = 'sent';
