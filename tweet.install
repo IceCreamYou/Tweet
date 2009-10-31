@@ -30,6 +30,7 @@ function tweet_update_6300() {
  * Implementation of hook_uninstall().
  */
 function tweet_uninstall() {
+  variable_del('tweet_node_vocabs');
   variable_del('tweet_new_window');
   variable_del('tweet_exclude');
   variable_del('tweet_format');

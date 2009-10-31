@@ -77,7 +77,7 @@ function tweet_to_twitter($type = 'icon', $title = TRUE, $nid = '') {
  *   display options for nodes are set to 'none' on the settings page.
  * @param $format
  *   A string representing the tweet text, optionally with the case-insensitive
- *   tokens [url] and [title]. If not passed, the format from the settings page
+ *   tokens [url], [title], and [node-tags]. If not passed, the format from the settings page
  *   will be used.
  * @param $nid
  *   The NID of the node for which the twitter link should be constructed, or
@@ -90,8 +90,19 @@ function tweet_to_twitter($type = 'icon', $title = TRUE, $nid = '') {
  */
 function _tweet_to_twitter($type = '', $format = '', $nid = '') {
   $q = '';
+  $node_tags = '';
   if (is_numeric($nid)) {
     $q = url('node/'. $nid, array('absolute' => TRUE));
+    $node_tag_vocabs = variable_get('tweet_node_vocabs', array());
+    foreach ($node_tag_vocabs as $vid => $enabled) {
+      if ($enabled) {
+        $node = node_load(array('nid' => $nid));
+        $terms = taxonomy_node_get_terms_by_vocabulary($node, $vid);
+        foreach ($terms as $term) {
+          $node_tags .= ' #'. check_plain($term->name);
+        }
+      }
+    }
   }
   $url = $q;
   if (module_exists('shorten')) {
@@ -100,9 +111,9 @@ function _tweet_to_twitter($type = '', $format = '', $nid = '') {
   $title = _tweet_get_title($nid);
 
   if (!$format) {
-    $format = variable_get('tweet_format', '[url] [title]');
+    $format = variable_get('tweet_format', '[url] [title][node-tags]');
   }
-  $tweet = _tweet_process($format, array('[url]' => $url, '[title]' => $title));
+  $tweet = _tweet_process($format, array('[url]' => $url, '[title]' => $title, '[node-tags]' => check_plain($node_tags)));
 
   $path = 'http://twitter.com/home';
   $text = (variable_get('tweet_text', t('Post to Twitter')) == t('Post to Twitter')) ? t('Post to Twitter') : variable_get('tweet_text', t('Post to Twitter'));
@@ -146,7 +157,7 @@ function _tweet_to_twitter($type = '', $format = '', $nid = '') {
  */
 function _tweet_process($format = '', $tokens = array()) {
   if (!$format) {
-    $format = variable_get('tweet_format', '[url] [title]');
+    $format = variable_get('tweet_format', '[url] [title][node-tags]');
   }
   foreach ($tokens as $search => $replace) {
     $format = str_ireplace($search, $replace, $format);
