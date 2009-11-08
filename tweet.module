@@ -59,10 +59,28 @@ function tweet_menu() {
 }
 
 /**
+ * Implementation of hook_block().
+ */
+function tweet_block($op = 'list', $delta = 0, $edit = NULL) {
+  if ($op == 'list') {
+    $block['tweet']['info'] = t('Tweet link');
+    return $block;
+  }
+  elseif ($op == 'view' && $delta == 'tweet') {
+    $block['subject'] = t('Tweet this');
+    $block['content'] = tweet_to_twitter();
+    return $block;
+  }
+}
+
+/**
  * Returns a link from _tweet_to_twitter().
  */
-function tweet_to_twitter($type = 'icon', $title = TRUE, $nid = '') {
-  $array = _tweet_to_twitter($type, $title, $nid);
+function tweet_to_twitter($type = '', $format = '', $nid = '') {
+  if (!$type && variable_get('tweet_node', 'icon') == 'none') {
+    $type = 'icon_text';
+  }
+  $array = _tweet_to_twitter($type, $format, $nid);
   return l($array['title'], $array['href'], array('attributes' => $array['attributes'], 'query' => $array['query'], 'absolute' => TRUE, 'html' => $array['html']));
 }
 
