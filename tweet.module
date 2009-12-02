@@ -111,13 +111,15 @@ function _tweet_to_twitter($type = '', $format = '', $nid = '') {
   $node_tags = '';
   if (is_numeric($nid)) {
     $q = url('node/'. $nid, array('absolute' => TRUE));
-    $node_tag_vocabs = variable_get('tweet_node_vocabs', array());
-    foreach ($node_tag_vocabs as $vid => $enabled) {
-      if ($enabled) {
-        $node = node_load(array('nid' => $nid));
-        $terms = taxonomy_node_get_terms_by_vocabulary($node, $vid);
-        foreach ($terms as $term) {
-          $node_tags .= ' #'. check_plain($term->name);
+    if (module_exists('taxonomy')) {
+      $node_tag_vocabs = variable_get('tweet_node_vocabs', array());
+      foreach ($node_tag_vocabs as $vid => $enabled) {
+        if ($enabled) {
+          $node = node_load(array('nid' => $nid));
+          $terms = taxonomy_node_get_terms_by_vocabulary($node, $vid);
+          foreach ($terms as $term) {
+            $node_tags .= ' #'. check_plain($term->name);
+          }
         }
       }
     }

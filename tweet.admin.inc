@@ -41,18 +41,20 @@ function tweet_admin() {
     '#default_value' => $node_types,
     '#options' => _tweet_node_types(),
   );
-  $options = array();
-  $vocabularies = taxonomy_get_vocabularies();
-  foreach ($vocabularies as $key => $vocabulary) {
-    $options[$key] = check_plain($vocabulary->name);
+  if (module_exists('taxonomy')) {
+    $options = array();
+    $vocabularies = taxonomy_get_vocabularies();
+    foreach ($vocabularies as $key => $vocabulary) {
+      $options[$key] = check_plain($vocabulary->name);
+    }
+    $form['tweet_node_vocabs'] = array(
+      '#type' => 'select',
+      '#multiple' => TRUE,
+      '#title' => t('Include taxonomy terms from these vocabularies as #hashtags in tweets when used in the current node'),
+      '#default_value' => variable_get('tweet_node_vocabs', array()),
+      '#options' => $options,
+    );
   }
-  $form['tweet_node_vocabs'] = array(
-    '#type' => 'select',
-    '#multiple' => TRUE,
-    '#title' => t('Include taxonomy terms from these vocabularies as #hashtags in tweets when used in the current node'),
-    '#default_value' => variable_get('tweet_node_vocabs', array()),
-    '#options' => $options,
-  );
   $image_location = drupal_get_path('module', 'tweet') .'/icon.png';
   $form['tweet_image'] = array(
     '#type' => 'textfield',
