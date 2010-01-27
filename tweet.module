@@ -3,7 +3,7 @@
 
 /**
  * @file
- *   Builds links to post pages to twitter.
+ *   Builds links to post pages to Twitter API sites.
  */
 
 /**
@@ -27,17 +27,15 @@ function tweet_link($type, $node = NULL, $teaser = FALSE) {
     $title = variable_get('tweet_title', 1);
     if (!$teaser) {
       $link_type = variable_get('tweet_node', 'icon');
-      if ($link_type != 'none') {
-        $links['tweet'] = _tweet_to_twitter($link_type, '', $node->nid);
-        return $links;
-      }
     }
     else {
       $link_type = variable_get('tweet_teaser', 'none');
-      if ($link_type != 'none') {
-        $links['tweet'] = _tweet_to_twitter($link_type, '', $node->nid);
-        return $links;
+    }
+    if ($link_type != 'none') {
+      foreach (tweet_sites(TRUE) as $site => $info) {
+        $links[$site] = _tweet_to_twitter($site, $link_type, '', $node->nid);
       }
+      return $links;
     }
   }
 }
@@ -68,19 +66,64 @@ function tweet_block($op = 'list', $delta = 0, $edit = NULL) {
   }
   elseif ($op == 'view' && $delta == 'tweet') {
     $block['subject'] = t('Tweet this');
-    $block['content'] = tweet_to_twitter();
+    $links = array();
+    foreach (tweet_sites(TRUE) as $site => $info) {
+      $links[$site] = tweet_to_twitter($site);
+    }
+    $block['content'] = theme('item_list', $links);
     return $block;
   }
 }
 
 /**
+ * Implementation of hook_tweet_sites().
+ */
+function tweet_tweet_sites() {
+  return array(
+    'Twitter' => array(
+      'path' => 'http://twitter.com/home',
+      'query_key' => 'status',
+      'image_name' => 'twitter.png',
+    ),
+  );
+}
+
+/**
+ * Builds a list of sites to which we can tweet.
+ *
+ * @param $enabled_only
+ *   If TRUE, only enabled sites are returned. Otherwise, all defined sites are
+ *   returned.
+ * @param $reset
+ *   Reset and rebuild the static cache.
+ * @return
+ *   An array of sites to which we can tweet with associated information.
+ */
+function tweet_sites($enabled_only = FALSE, $reset = FALSE) {
+  static $sites = array();
+  if ($reset || empty($sites)) {
+    $sites = module_invoke_all('tweet_sites');
+    drupal_alter('tweet_sites', $sites);
+  }
+  $allowed = $sites;
+  if ($enabled_only) {
+    foreach ($sites as $site => $info) {
+      if (!in_array($site, variable_get('tweet_sites', array('Twitter' => 'Twitter')))) {
+        unset($allowed[$site]);
+      }
+    }
+  }
+  return $allowed;
+}
+
+/**
  * Returns a link from _tweet_to_twitter().
  */
-function tweet_to_twitter($type = '', $format = '', $nid = '') {
+function tweet_to_twitter($site = 'twitter', $type = '', $format = '', $nid = '') {
   if (!$type && variable_get('tweet_node', 'icon') == 'none') {
     $type = 'icon_text';
   }
-  $array = _tweet_to_twitter($type, $format, $nid);
+  $array = _tweet_to_twitter($site, $type, $format, $nid);
   return l($array['title'], $array['href'], array('attributes' => $array['attributes'], 'query' => $array['query'], 'absolute' => TRUE, 'html' => $array['html']));
 }
 
@@ -88,6 +131,8 @@ function tweet_to_twitter($type = '', $format = '', $nid = '') {
  * Creates a link to post a URL and optionally title to twitter.  Uses the
  * current page by default.
  *
+ * @param $site
+ *   The site to which the generated Tweet link leads. Twitter by default.
  * @param $type
  *   Specifies what will show up in the link: the twitter icon, the twitter icon
  *   and text, or just text. Pass 'icon' to show just the icon, 'icon_text' to
@@ -106,9 +151,11 @@ function tweet_to_twitter($type = '', $format = '', $nid = '') {
  * @return
  *   A themed link to post the specified or current page to twitter.
  */
-function _tweet_to_twitter($type = '', $format = '', $nid = '') {
+function _tweet_to_twitter($site = 'twitter', $type = '', $format = '', $nid = '') {
   $q = '';
   $node_tags = '';
+  $sites = tweet_sites();
+  $site_info = $sites[$site];
   if (is_numeric($nid)) {
     $q = url('node/'. $nid, array('absolute' => TRUE));
     if (module_exists('taxonomy')) {
@@ -135,9 +182,13 @@ function _tweet_to_twitter($type = '', $format = '', $nid = '') {
   }
   $tweet = _tweet_process($format, array('[url]' => $url, '[title]' => $title, '[node-tags]' => check_plain($node_tags)));
 
-  $path = 'http://twitter.com/home';
-  $text = (variable_get('tweet_text', t('Post to Twitter')) == t('Post to Twitter')) ? t('Post to Twitter') : variable_get('tweet_text', t('Post to Twitter'));
-  $image_location = drupal_get_path('module', 'tweet') .'/icon.png';
+  $path = $site_info['path'];
+  $text = _tweet_text($site);
+  $image_dir = $site_info['image_dir'];
+  if (!$image_dir) {
+    $image_dir = drupal_get_path('module', 'tweet');
+  }
+  $image_location = $image_dir .'/'. $site_info['image_name'];
   $image = theme('image', variable_get('tweet_image', $image_location), $text, $text);
   if (!$type) {
     //Note that $type can be 'none', in which case nothing shows up.
@@ -161,7 +212,7 @@ function _tweet_to_twitter($type = '', $format = '', $nid = '') {
     $path = $_GET['q'];
     $tweet = 'sent';
   }
-  return array('title' => $show, 'href' => $path, 'attributes' => $attributes, 'query' => 'status='. $tweet, 'html' => TRUE);
+  return array('title' => $show, 'href' => $path, 'attributes' => $attributes, 'query' => $site_info['query_key'] .'='. $tweet, 'html' => TRUE);
 }
 
 /**
@@ -248,4 +299,11 @@ function _tweet_node_types() {
   $a = array_keys(node_get_types());
   $return = drupal_map_assoc($a);
   return $return;
+}
+
+/**
+ * Helper function to figure out what text to display with a Tweet link.
+ */
+function _tweet_text($site) {
+  return str_replace('[site]', check_plain($site), variable_get('tweet_text', t('Post to [site]')));
 }

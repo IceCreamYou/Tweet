@@ -55,6 +55,19 @@ function tweet_admin() {
       '#options' => $options,
     );
   }
+  $options = array();
+  foreach (tweet_sites() as $site => $data) {
+    $options[$site] = $site;
+  }
+  $form['tweet_sites'] = array(
+    '#type' => 'select',
+    '#multiple' => TRUE,
+    '#required' => TRUE,
+    '#title' => t('Sites'),
+    '#description' => t('Display links to these sites from the Twitter API family.'),
+    '#default_value' => variable_get('tweet_sites', array('Twitter' => 'Twitter')),
+    '#options' => $options,
+  );
   $image_location = drupal_get_path('module', 'tweet') .'/icon.png';
   $form['tweet_image'] = array(
     '#type' => 'textfield',
@@ -78,8 +91,8 @@ function tweet_admin() {
   $form['tweet_text'] = array(
     '#type' => 'textfield',
     '#title' => t('Text of link'),
-    '#description' => t('This is only relevant if you picked a display format that uses text.'),
-    '#default_value' => variable_get('tweet_text', t('Post to Twitter')),
+    '#description' => t('The token [site] will be replaced with the name of the site for which the link is generated. This is only relevant if you picked a display format that uses text.'),
+    '#default_value' => variable_get('tweet_text', t('Post to [site]')),
   );
   return system_settings_form($form);
 }

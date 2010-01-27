@@ -1,4 +1,4 @@
 ; $Id$
 name = Tweet
-description = Builds links to post pages to twitter.
+description = Builds links to post pages to Twitter and Twitter API sites.
 core = 6.x
