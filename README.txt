@@ -3,17 +3,16 @@
 =============
 == Summary ==
 =============
-This module provides links to post pages to sites that use the Twitter API.
-Clicking the links will open a new window or tab with twitter in it. The tweet
-will be in focus and will contain a customizable string which can
-programmatically include the relevant URL, title, and (if the tweet link appears
-on a node) taxonomy terms. The Shorten URLs module is used to shorten the URLs
-if it is installed.
+This module provides links to post or "tweet" pages to websites like Twitter.
+Clicking the links will open a new window or tab for the relevant site. The
+tweet will be in focus and will contain customizable text which can include the
+relevant URL, title, and (if the tweet link appears on a node) taxonomy terms.
+The Shorten URLs module is used to shorten the URLs if it is installed.
 
 URLs and titles will be for either the node which is being displayed as a
 teaser or for the current page. Multiple links can appear on the same page, as
-on a View of teasers. By default, links appear in the Links section when viewing
-full nodes or teasers.
+on a View of teasers. By default, links appear in the Links section when
+viewing full nodes or teasers.
 
 Administrators can choose whether to show the link as an icon, an icon and
 text, or just text.  Options can be chosen separately for nodes and teasers.
@@ -36,7 +35,7 @@ If you want more control, the _tweet_to_twitter() function takes the same
 arguments and returns an array in the format required by hook_link()
 (http://api.drupal.org/api/function/hook_link/6).
 
--- tweet_to_twitter($site = 'twitter', $type = '', $format = '', $nid = '') --
+-- tweet_to_twitter($site = 'Twitter', $type = '', $format = '', $nid = '') --
 $site
   Specifies for which site the link will be generated. Twitter is the default.
   See tweet_sites() for a list of allowed sites.
@@ -54,7 +53,7 @@ $nid
   the absolute URL of the page for which the twitter link should be
   constructed. If the URL given is not the current URL, and if $nid is not a
   NID, the title must be set manually (instead of using the [title] token) or
-  it will be incorrect.
+  it could be incorrect.
 
 
 If you are building a module for general use, you will probably want to use the
@@ -68,10 +67,14 @@ $reset
   Reset and rebuild the static cache.
 
 
-If you want to add another site for the Tweet module to use, you should use
-hook_tweet_sites(). That hook returns an associative array specifying
+----
+If you want to add another site for the Tweet module to use, you should
+implement hook_tweet_sites(). That hook returns an associative array specifying
 information that Tweet will use to build tweet links. See tweet_tweet_sites()
-for an example. The elements of the returned array include:
+for an example. The key of each element of the array should be the name of the
+website; the value should be another associative array. The elements of the
+inner array include:
+
 path
   The base URL where Tweet will send users who click on the tweet link.
   Ex.: 'http://twitter.com/home'
@@ -79,19 +82,24 @@ query_key
   The query key that specifies the text which will appear in the tweet textarea.
   For Twitter, this is 'status,' generating a link like
   http://twitter.com/home?status=[tweet_text].
-image_name
-  The name of the image file associated with the site. Ex.: 'twitter.png'
-image_dir (Optional)
-  The directory where the image exists. If not specified, Tweet assumes the
-  image is in the Tweet module directory.
-  Ex.: drupal_get_path('module', 'tweet')
+image
+  The location of the image file associated with the site. Your module may want
+  to offer a setting to override this path if you want your users to be able to
+  use custom icons.
+  Ex.: drupal_get_path('module', 'tweet') .'/twitter.png'
+
+If you just want to modify the settings a module provides for an existing site,
+use hook_tweet_sites_alter(&$sites), where $sites is the array of sites
+returned by module_invoke_all('tweet_sites').
 
 ==================
 == Installation ==
 ==================
-   1. Install this module as usual (FTP the files to sites/all/modules, enable 
-        at admin/build/modules).  See http://drupal.org/node/176044 for help.
-   2. If you want, go to admin/settings/tweet to change the module's settings.
+  1. Install this module as usual (FTP the files to sites/all/modules, enable 
+     at admin/build/modules).  See http://drupal.org/node/176044 for help.
+  2. If you want to use shortened URLs in your tweets, also install the
+      Shorten URLs module by the same author (see the Links section below).
+  3. If you want, go to admin/settings/tweet to change the module's settings.
 
 ===========
 == Links ==

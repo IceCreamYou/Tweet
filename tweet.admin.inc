@@ -59,20 +59,22 @@ function tweet_admin() {
   foreach (tweet_sites() as $site => $data) {
     $options[$site] = $site;
   }
-  $form['tweet_sites'] = array(
-    '#type' => 'select',
-    '#multiple' => TRUE,
-    '#required' => TRUE,
-    '#title' => t('Sites'),
-    '#description' => t('Display links to these sites from the Twitter API family.'),
-    '#default_value' => variable_get('tweet_sites', array('Twitter' => 'Twitter')),
-    '#options' => $options,
-  );
-  $image_location = drupal_get_path('module', 'tweet') .'/icon.png';
+  if (count($options) > 1) {
+    $form['tweet_sites'] = array(
+      '#type' => 'select',
+      '#multiple' => TRUE,
+      '#required' => TRUE,
+      '#title' => t('Sites'),
+      '#description' => t('Display links to these sites from the Twitter API family.'),
+      '#default_value' => variable_get('tweet_sites', array('Twitter' => 'Twitter')),
+      '#options' => $options,
+    );
+  }
+  $image_location = drupal_get_path('module', 'tweet') .'/twitter.png';
   $form['tweet_image'] = array(
     '#type' => 'textfield',
-    '#title' => t('Image'),
-    '#description' => t('Enter the URL for the image you want to show up if you allow images to appear in your links, relative to your Drupal installation.  Ex.: sites/all/modules/tweet/icon.png'),
+    '#title' => t('Twitter image'),
+    '#description' => t('The location of the icon to use with the "Post to Twitter" link, relative to your Drupal installation. Ex.: @location', array('@location' => $image_location)),
     '#default_value' => variable_get('tweet_image', $image_location),
   );
   $form['tweet_exclude'] = array(
