@@ -78,7 +78,7 @@ function tweet_admin() {
     '#default_value' => variable_get('tweet_image', $image_location),
   );
   $form['tweet_exclude'] = array(
-    '#type' => 'textfield', 
+    '#type' => 'textfield',
     '#title' => t('Exclude nodes'),
     '#description' => t('Enter the NIDs of nodes which should not have Tweet links, separated by commas.'),
     '#default_value' => variable_get('tweet_exclude', ''),
@@ -86,9 +86,12 @@ function tweet_admin() {
   $form['tweet_format'] = array(
     '#type' => 'textfield',
     '#title' => t('Format'),
-    '#description' => t('Manipulate the elements of the tweet by changing their order, removing them, or adding them (like hashtags).  You can use the case-insensitive tokens [url], [title], and [node-tags].'),
+    '#description' => t('Manipulate the elements of the tweet by changing their order, removing them, or adding them (like hashtags).') .' '.
+      t('You can use the case-sensitive tokens [url], [title], [node-tags], and [node-teaser].') .' '.
+      t('The [node-tags] and [node-teaser] tokens only take effect on nodes.') .' '.
+      t('Note that some token values may be truncated or left out to fit the tweet into 140 characters.'),
     '#maxlength' => 140,
-    '#default_value' => variable_get('tweet_format', '[url] [title][node-tags]'),
+    '#default_value' => variable_get('tweet_format', '[url] [title] [node-tags]'),
   );
   $form['tweet_text'] = array(
     '#type' => 'textfield',

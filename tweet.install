@@ -8,22 +8,26 @@
 
 /**
  * Implementation of hook_update_N().
+ *
+ * The format of [node-tags] is improved so it doesn't include a leading space.
+ * As a result, we need to fix old formats that expect the leading space.
+ * This doesn't fix every case, but it fixes most.
  */
-function tweet_update_6300() {
-  if (module_exists('shorten')) {
-    $method = variable_get('tweet_method', 'curl');
-    variable_set('shorten_method', $method);
-    variable_del('tweet_method');
-
-    $service = variable_get('tweet_service', 'is.gd');
-    variable_set('shorten_service', $service);
-    variable_del('tweet_service');
-
-    $backup = variable_get('tweet_service_backup', 'TinyURL');
-    variable_set('shorten_service_backup', $backup);
-    variable_del('tweet_service_backup');
+function tweet_update_6400() {
+  //Update to new icon path.
+  $path = drupal_get_path('module', 'tweet');
+  $old = $path .'/icon.png';
+  $new = $path .'/twitter.png';
+  if (variable_get('tweet_image', $new) == $old) {
+    variable_set('tweet_image', $new);
   }
-  return array(array('success' => TRUE, 'query' => t('Settings converted from Tweet to Shorten.')));
+
+  $format = variable_get('tweet_format', '[url] [title] [node-tags]');
+  if (strpos($format, '][node-tags]') !== FALSE) {
+    str_replace('][node-tags]', '] [node-tags]', $format);
+    variable_set('tweet_format', $format);
+  }
+  return array();
 }
 
 /**

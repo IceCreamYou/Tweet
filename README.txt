@@ -6,8 +6,9 @@
 This module provides links to post or "tweet" pages to websites like Twitter.
 Clicking the links will open a new window or tab for the relevant site. The
 tweet will be in focus and will contain customizable text which can include the
-relevant URL, title, and (if the tweet link appears on a node) taxonomy terms.
-The Shorten URLs module is used to shorten the URLs if it is installed.
+relevant URL, title, and (if the tweet link appears on a node) taxonomy terms
+and the teaser. The Shorten URLs module is used to shorten the URLs if it is
+installed.
 
 URLs and titles will be for either the node which is being displayed as a
 teaser or for the current page. Multiple links can appear on the same page, as
@@ -45,9 +46,9 @@ $type
   show the icon and text, and 'text' to show just the text. Required if display
   options for nodes are set to 'none' on the settings page.
 $format
-  A string representing the tweet text, optionally with the case-insensitive
-  tokens [url], [title], and [node-tags]. If not passed, the format from the
-  settings page will be used.
+  A string representing the tweet text, optionally with the case-sensitive
+  tokens [url], [title], [node-tags], and [node-teaser]. If not passed, the
+  format from the settings page will be used.
 $nid
   The NID of the node for which the twitter link should be constructed, or
   the absolute URL of the page for which the twitter link should be

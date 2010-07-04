@@ -159,21 +159,33 @@ function tweet_to_twitter($site = 'Twitter', $type = '', $format = '', $nid = ''
 function _tweet_to_twitter($site = 'Twitter', $type = '', $format = '', $nid = '') {
   $q = '';
   $node_tags = '';
+  $teaser = '';
+  if (!$format) {
+    $format = variable_get('tweet_format', '[url] [title] [node-tags]');
+  }
   $sites = tweet_sites();
   $site_info = $sites[$site];
   if (is_numeric($nid)) {
     $q = url('node/'. $nid, array('absolute' => TRUE));
-    if (module_exists('taxonomy')) {
+    if (module_exists('taxonomy') && strpos($format, '[node-tags]') !== FALSE) {
       $node_tag_vocabs = variable_get('tweet_node_vocabs', array());
+      $tags = array();
+      $node = node_load(array('nid' => $nid));
       foreach ($node_tag_vocabs as $vid => $enabled) {
         if ($enabled) {
-          $node = node_load(array('nid' => $nid));
           $terms = taxonomy_node_get_terms_by_vocabulary($node, $vid);
           foreach ($terms as $term) {
-            $node_tags .= ' #'. check_plain($term->name);
+            $tags[] = '#'. check_plain($term->name);
           }
         }
       }
+      $node_tags = implode(' ', $tags);
+    }
+    if (strpos($format, '[node-teaser]') !== FALSE) {
+      if (!isset($node)) {
+        $node = node_load(array('nid' => $nid));
+      }
+      $teaser = $node->teaser;
     }
   }
   $url = $q;
@@ -181,11 +193,7 @@ function _tweet_to_twitter($site = 'Twitter', $type = '', $format = '', $nid = '
     $url = shorten_url($q);
   }
   $title = _tweet_get_title($nid);
-
-  if (!$format) {
-    $format = variable_get('tweet_format', '[url] [title][node-tags]');
-  }
-  $tweet = _tweet_process($format, array('[url]' => $url, '[title]' => $title, '[node-tags]' => check_plain($node_tags)));
+  $tweet = _tweet_process($format, array('[url]' => $url, '[title]' => $title, '[node-teaser]' => $teaser, '[node-tags]' => check_plain($node_tags)));
 
   $path = $site_info['path'];
   $text = _tweet_text($site);
@@ -221,16 +229,33 @@ function _tweet_to_twitter($site = 'Twitter', $type = '', $format = '', $nid = '
  *   A string containing the text of the tweet before it gets processed.
  * @param $tokens
  *   An associative array where keys represent text that will be replaced by
- *   their value in $format.
+ *   their value in $format. Because only 140 characters are allowed, it is
+ *   possible that values will be truncated or not included. Tokens are
+ *   assumed to be ordered by importance (most important first).
  * @return
  *   The URL-ready tweet text.
  */
 function _tweet_process($format = '', $tokens = array()) {
   if (!$format) {
-    $format = variable_get('tweet_format', '[url] [title][node-tags]');
+    $format = variable_get('tweet_format', '[url] [title] [node-tags]');
   }
+  //The major downside of the way we're counting characters here is that we
+  //can't guarantee a minimum number of characters for a given token. However
+  //in order to do that, the process would need to be much more complex. It
+  //just seems like overkill.
+  $len = 140 - drupal_strlen(str_replace(array_keys($tokens), array(), $format));
   foreach ($tokens as $search => $replace) {
-    $format = str_ireplace($search, $replace, $format);
+    //In order to include text for a token, we want at least 3 letters and an ellipsis.
+    if ($len < 5) {
+      $replace = '';
+    }
+    elseif (drupal_strlen($replace) > $len) {
+      //"\xE2\x80\xA6" is the UTF8 character sequence for the ellipsis, which must be enclosed in double quotes.
+      //Neither the literal binary character (…) nor the HTML entity (&hellip;) work on all operating systems.
+      $replace = drupal_substr($replace, 0, $len - 1) ."\xE2\x80\xA6";
+    }
+    $len -= drupal_strlen($replace);
+    $format = str_replace($search, $replace, $format);
   }
   $format = drupal_urlencode($format);
   //The #, &, and / characters get double-encoded by drupal_urlencode, but they must appear single-encoded for Twitter to recognize them.
@@ -260,11 +285,6 @@ function _tweet_get_title($nid = '') {
   }
   else {
     $title = drupal_get_title();
-  }
-  if (drupal_strlen($title) > 120) {
-    //"\xE2\x80\xA6" is the UTF8 character sequence for the ellipsis, which must be enclosed in double quotes.
-    //Neither the literal binary character (…) nor the HTML entity (&hellip;) work on all operating systems.
-    $title = drupal_substr($title, 0, 119) ."\xE2\x80\xA6";
   }
   return $title;
 }
