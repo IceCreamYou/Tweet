@@ -185,7 +185,20 @@ function _tweet_to_twitter($site = 'Twitter', $type = '', $format = '', $nid = '
       if (!isset($node)) {
         $node = node_load(array('nid' => $nid));
       }
-      $teaser = $node->teaser;
+      //Don't execute PHP -- doing so can cause WSODs.
+      $filters = filter_list_format($node->format);
+      if (isset($filters['php/0']) && strpos($node->teaser, '<?') !== FALSE) {
+        $teaser = '';
+      }
+      //Run the filter so we get the right final text.
+      //Then strip HTML tags so we show only plaintext with no markup,
+      //but don't convert HTML entities because we will urlencode them later.
+      //filter_xss() is more robust than strip_tags(), but it does require that
+      //we manually decode the HTML entities afterwards, so this is a slow
+      //process.
+      else {
+        $teaser = html_entity_decode(filter_xss(check_markup($node->teaser, $node->format), array()), ENT_QUOTES);
+      }
     }
   }
   $url = $q;
@@ -257,9 +270,15 @@ function _tweet_process($format = '', $tokens = array()) {
     $len -= drupal_strlen($replace);
     $format = str_replace($search, $replace, $format);
   }
+  //Collapse whitespace (multiple spaces can occur if any token is empty).
+  if (strpos($format, '  ') !== FALSE) {
+    $format = preg_replace('/\s\s+/', ' ', $format);
+  }
+  //Drupal does not automatically urlencode links.
   $format = drupal_urlencode($format);
-  //The #, &, and / characters get double-encoded by drupal_urlencode, but they must appear single-encoded for Twitter to recognize them.
-  //Spaces are manually encoded to plus signs for clarity of whitespace at the end of the tweet.
+  //The #, &, and / characters get double-encoded by drupal_urlencode,
+  //but they must appear single-encoded for Twitter to recognize them.
+  //We replace urlencoded spaces with plus signs here for clarity.
   $format = str_replace(array('%2523', '%2526', '%252F', '%20'), array('%23', '%26', '%2F', '+'), $format);
   return $format;
 }
