@@ -259,7 +259,7 @@ function _tweet_process($format = '', $tokens = array()) {
   $len = 140 - drupal_strlen(str_replace(array_keys($tokens), array(), $format));
   foreach ($tokens as $search => $replace) {
     //In order to include text for a token, we want at least 3 letters and an ellipsis.
-    if ($len < 5) {
+    if ($len < 5 || strpos($format, $search) === FALSE) {
       $replace = '';
     }
     elseif (drupal_strlen($replace) > $len) {
