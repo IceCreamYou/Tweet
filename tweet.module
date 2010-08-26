@@ -200,8 +200,15 @@ function _tweet_to_twitter($site = 'Twitter', $type = '', $format = '', $nid = '
         $teaser = html_entity_decode(filter_xss(check_markup($node->teaser, $node->format), array()), ENT_QUOTES);
       }
     }
+    $url = $q;
   }
-  $url = $q;
+  elseif (is_string($nid)) {
+    $url = $nid;
+    $q = $nid;
+  }
+  else {
+    $url = url($_GET['q'], array('absolute' => TRUE));
+  }
   if (module_exists('shorten')) {
     $url = shorten_url($q);
   }
