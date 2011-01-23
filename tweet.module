@@ -54,7 +54,7 @@ function tweet_menu() {
     'description' => 'Adjust certain display settings for Tweet.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('tweet_admin'),
-    'access arguments' => array('access administration pages'),
+    'access arguments' => array('administer site configuration'),
     'file' => 'tweet.admin.inc',
   );
   return $items;
