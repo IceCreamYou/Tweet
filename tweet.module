@@ -54,7 +54,7 @@ function tweet_menu() {
     'description' => 'Adjust certain display settings for Tweet.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('tweet_admin'),
-    'access arguments' => array('access administration pages'),
+    'access arguments' => array('administer site configuration'),
     'file' => 'tweet.admin.inc',
   );
   return $items;
@@ -197,7 +197,7 @@ function _tweet_to_twitter($site = 'Twitter', $type = '', $format = '', $nid = '
       //we manually decode the HTML entities afterwards, so this is a slow
       //process.
       else {
-        $teaser = html_entity_decode(filter_xss(check_markup($node->teaser, $node->format), array()), ENT_QUOTES);
+        $teaser = html_entity_decode(filter_xss(check_markup($node->teaser, $node->format, FALSE), array()), ENT_QUOTES);
       }
     }
     $url = $q;
