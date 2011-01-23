@@ -34,7 +34,7 @@ be for the current page according to your settings.
 
 If you want more control, the _tweet_to_twitter() function takes the same
 arguments and returns an array in the format required by hook_link()
-(http://api.drupal.org/api/function/hook_link/6).
+(http://api.drupal.org/api/function/hook_link).
 
 -- tweet_to_twitter($site = 'Twitter', $type = '', $format = '', $nid = '') --
 $site

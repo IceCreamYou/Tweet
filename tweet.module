@@ -7,26 +7,26 @@
  */
 
 /**
- * Implementation of hook_help().
+ * Implements hook_help().
  */
 function tweet_help($path, $arg) {
   $output = '';
   switch ($path) {
     case "admin/help#tweet":
-      $output = '<p>'. t("This module builds links to post pages to twitter.") .'</p>';
+      $output = '<p>' . t("This module builds links to post pages to twitter.") . '</p>';
       break;
   }
   return $output;
 }
 
 /**
- * Implementation of hook_link().
+ * Implements hook_link().
  */
 function tweet_link($type, $node = NULL, $teaser = FALSE) {
   $types = variable_get('tweet_types', _tweet_node_types());
   if ($type == 'node'
-    && (in_array($node->type, $types) || empty($types))
-    && !_tweet_exclude($node->nid)) {
+      && (in_array($node->type, $types) || empty($types))
+      && !_tweet_exclude($node->nid)) {
     $title = variable_get('tweet_title', 1);
     if (!$teaser) {
       $link_type = variable_get('tweet_node', 'icon');
@@ -37,7 +37,7 @@ function tweet_link($type, $node = NULL, $teaser = FALSE) {
     if ($link_type != 'none') {
       $links = array();
       foreach (tweet_sites(TRUE) as $site => $info) {
-        $links['tweet_'. $site] = _tweet_to_twitter($site, $link_type, '', $node->nid);
+        $links['tweet_' . $site] = _tweet_to_twitter($site, $link_type, '', $node->nid);
       }
       return $links;
     }
@@ -45,11 +45,11 @@ function tweet_link($type, $node = NULL, $teaser = FALSE) {
 }
 
 /**
- * Implementation of hook_menu().
+ * Implements hook_menu().
  */
 function tweet_menu() {
   $items = array();
-  $items['admin/settings/tweet'] = array(
+  $items['admin/config/tweet'] = array(
     'title' => 'Tweet',
     'description' => 'Adjust certain display settings for Tweet.',
     'page callback' => 'drupal_get_form',
@@ -61,34 +61,43 @@ function tweet_menu() {
 }
 
 /**
- * Implementation of hook_block().
+ * Implements hook_block_info().
  */
-function tweet_block($op = 'list', $delta = 0, $edit = NULL) {
-  if ($op == 'list') {
-    $block['tweet']['info'] = t('Tweet link');
-    return $block;
-  }
-  elseif ($op == 'view' && $delta == 'tweet') {
+function tweet_block_info() {
+  $block['tweet']['info'] = t('Tweet link');
+  return $block;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function tweet_block_view($delta) {
+  if ($delta == 'tweet') {
     $block['subject'] = t('Tweet this');
     $links = array();
     foreach (tweet_sites(TRUE) as $site => $info) {
       $links[$site] = tweet_to_twitter($site);
     }
-    $block['content'] = theme('item_list', $links);
+    $block['content'] = theme('item_list', array('items' => $links));
     return $block;
   }
 }
 
 /**
- * Implementation of hook_tweet_sites().
+ * Implements hook_tweet_sites().
  */
 function tweet_tweet_sites() {
-  $default_image_location = drupal_get_path('module', 'tweet') .'/twitter.png';
+  $path = drupal_get_path('module', 'tweet');
   return array(
     'Twitter' => array(
       'path' => 'http://twitter.com/home',
       'query_key' => 'status',
-      'image' => variable_get('tweet_image', $default_image_location),
+      'image' => variable_get('tweet_image', $path . '/twitter.png'),
+    ),
+    'Identi.ca' => array(
+      'path' => 'http://identi.ca/notice/new',
+      'query_key' => 'status_textarea',
+      'image' => variable_get('tweet_identica_image', $path .'/identica.png'),
     ),
   );
 }
@@ -166,16 +175,16 @@ function _tweet_to_twitter($site = 'Twitter', $type = '', $format = '', $nid = '
   $sites = tweet_sites();
   $site_info = $sites[$site];
   if (is_numeric($nid)) {
-    $q = url('node/'. $nid, array('absolute' => TRUE));
+    $q = url('node/' . $nid, array('absolute' => TRUE));
     if (module_exists('taxonomy') && strpos($format, '[node-tags]') !== FALSE) {
       $node_tag_vocabs = variable_get('tweet_node_vocabs', array());
       $tags = array();
-      $node = node_load(array('nid' => $nid));
+      $node = node_load($nid);
       foreach ($node_tag_vocabs as $vid => $enabled) {
         if ($enabled) {
           $terms = taxonomy_node_get_terms_by_vocabulary($node, $vid);
           foreach ($terms as $term) {
-            $tags[] = '#'. check_plain($term->name);
+            $tags[] = '#' . check_plain($term->name);
           }
         }
       }
@@ -183,21 +192,21 @@ function _tweet_to_twitter($site = 'Twitter', $type = '', $format = '', $nid = '
     }
     if (strpos($format, '[node-teaser]') !== FALSE) {
       if (!isset($node)) {
-        $node = node_load(array('nid' => $nid));
+        $node = node_load($nid);
       }
-      //Don't execute PHP -- doing so can cause WSODs.
+      // Don't execute PHP -- doing so can cause WSODs.
       $filters = filter_list_format($node->format);
       if (isset($filters['php/0']) && strpos($node->teaser, '<?') !== FALSE) {
         $teaser = '';
       }
-      //Run the filter so we get the right final text.
-      //Then strip HTML tags so we show only plaintext with no markup,
-      //but don't convert HTML entities because we will urlencode them later.
-      //filter_xss() is more robust than strip_tags(), but it does require that
-      //we manually decode the HTML entities afterwards, so this is a slow
-      //process.
+      // Run the filter so we get the right final text.
+      // Then strip HTML tags so we show only plaintext with no markup,
+      // but don't convert HTML entities because we will urlencode them later.
+      // filter_xss() is more robust than strip_tags(), but it does require
+      // that we manually decode the HTML entities afterwards, so this is a
+      // slow process.
       else {
-        $teaser = html_entity_decode(filter_xss(check_markup($node->teaser, $node->format), array()), ENT_QUOTES);
+        $teaser = html_entity_decode(filter_xss(check_markup($node->teaser, $node->format, FALSE), array()), ENT_QUOTES);
       }
     }
     $url = $q;
@@ -218,9 +227,9 @@ function _tweet_to_twitter($site = 'Twitter', $type = '', $format = '', $nid = '
   $path = $site_info['path'];
   $text = _tweet_text($site);
   $image_location = $site_info['image'];
-  $image = theme('image', $image_location, $text, $text);
+  $image = theme('image', array('path' => $image_location, 'alt' => $text, 'title' => $text));
   if (!$type) {
-    //Note that $type can be 'none', in which case nothing shows up.
+    // Note that $type can be 'none', in which case nothing shows up.
     $type = variable_get('tweet_node', 'icon');
   }
   if ($type == 'icon') {
@@ -239,7 +248,7 @@ function _tweet_to_twitter($site = 'Twitter', $type = '', $format = '', $nid = '
   elseif (variable_get('tweet_new_window', 'target') == 'js') {
     $attributes['onclick'] = "window.open(this.href); return false;";
   }
-  return array('title' => $show, 'href' => $path, 'attributes' => $attributes, 'query' => $site_info['query_key'] .'='. $tweet, 'html' => TRUE);
+  return array('title' => $show, 'href' => $path, 'attributes' => $attributes, 'query' => array($site_info['query_key'] => $tweet), 'html' => TRUE);
 }
 
 /**
@@ -259,34 +268,34 @@ function _tweet_process($format = '', $tokens = array()) {
   if (!$format) {
     $format = variable_get('tweet_format', '[url] [title] [node-tags]');
   }
-  //The major downside of the way we're counting characters here is that we
-  //can't guarantee a minimum number of characters for a given token. However
-  //in order to do that, the process would need to be much more complex. It
-  //just seems like overkill.
+  // The major downside of the way we're counting characters here is that we
+  // can't guarantee a minimum number of characters for a given token. However
+  // in order to do that, the process would need to be much more complex. It
+  // just seems like overkill.
   $len = 140 - drupal_strlen(str_replace(array_keys($tokens), array(), $format));
   foreach ($tokens as $search => $replace) {
-    //In order to include text for a token, we want at least 3 letters and an ellipsis.
+    // In order to include text for a token, we want at least 3 letters and an ellipsis.
     if ($len < 5 || strpos($format, $search) === FALSE) {
       $replace = '';
     }
     elseif (drupal_strlen($replace) > $len) {
-      //"\xE2\x80\xA6" is the UTF8 character sequence for the ellipsis, which must be enclosed in double quotes.
-      //Neither the literal binary character (…) nor the HTML entity (&hellip;) work on all operating systems.
-      $replace = drupal_substr($replace, 0, $len - 1) ."\xE2\x80\xA6";
+      // "\xE2\x80\xA6" is the UTF8 character sequence for the ellipsis, which must be enclosed in double quotes.
+      // Neither the literal binary character (…) nor the HTML entity (&hellip;) work on all operating systems.
+      $replace = drupal_substr($replace, 0, $len - 1) . "\xE2\x80\xA6";
     }
     $len -= drupal_strlen($replace);
     $format = str_replace($search, $replace, $format);
   }
-  //Collapse whitespace (multiple spaces can occur if any token is empty).
+  // Collapse whitespace (multiple spaces can occur if any token is empty).
   if (strpos($format, '  ') !== FALSE) {
     $format = preg_replace('/\s\s+/', ' ', $format);
   }
-  //Drupal does not automatically urlencode links.
-  $format = drupal_urlencode($format);
-  //The #, &, and / characters get double-encoded by drupal_urlencode,
-  //but they must appear single-encoded for Twitter to recognize them.
-  //We replace urlencoded spaces with plus signs here for clarity.
-  $format = str_replace(array('%2523', '%2526', '%252F', '%20'), array('%23', '%26', '%2F', '+'), $format);
+  // Drupal does not automatically urlencode links.
+  //$format = drupal_encode_path($format);
+  // The #, &, and / characters get double-encoded by drupal_urlencode,
+  // but they must appear single-encoded for Twitter to recognize them.
+  // We replace urlencoded spaces with plus signs here for clarity.
+  //$format = str_replace(array('%2523', '%2526', '%252F', '%20'), array('%23', '%26', '%2F', '+'), $format);
   return $format;
 }
 
@@ -306,7 +315,7 @@ function _tweet_process($format = '', $tokens = array()) {
  */
 function _tweet_get_title($nid = '') {
   if (is_numeric($nid)) {
-    $node = node_load(array('nid' => $nid));
+    $node = node_load($nid);
     $title = $node->title;
   }
   else {
@@ -341,7 +350,7 @@ function _tweet_exclude($nid) {
  * Helper function to provide node types in the format array(TYPE => TYPE).
  */
 function _tweet_node_types() {
-  $a = array_keys(node_get_types());
+  $a = array_keys(node_type_get_types());
   $return = drupal_map_assoc($a);
   return $return;
 }

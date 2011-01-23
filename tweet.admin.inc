@@ -9,7 +9,7 @@
 /**
  * Settings page.
  */
-function tweet_admin() {
+function tweet_admin($form, &$form_state) {
   $form['tweet_node'] = array(
     '#type' => 'select',
     '#title' => t('Type of link to show on nodes'),
@@ -70,12 +70,19 @@ function tweet_admin() {
       '#options' => $options,
     );
   }
-  $image_location = drupal_get_path('module', 'tweet') .'/twitter.png';
+  $path = drupal_get_path('module', 'tweet');
   $form['tweet_image'] = array(
     '#type' => 'textfield',
     '#title' => t('Twitter image'),
-    '#description' => t('The location of the icon to use with the "Post to Twitter" link, relative to your Drupal installation. Ex.: @location', array('@location' => $image_location)),
-    '#default_value' => variable_get('tweet_image', $image_location),
+    '#description' => t('The location of the icon to use with the "Post to Twitter" link, relative to your Drupal installation. Ex.: @location', array('@location' => $path . '/twitter.png')),
+    '#default_value' => variable_get('tweet_image', $path . '/twitter.png'),
+  );
+  $image_location = drupal_get_path('module', 'tweet') .'/identica.png';
+  $form['tweet_identica_image'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Identica image'),
+    '#description' => t('The location of the icon to use with the "Post to Identi.ca" link, relative to your Drupal installation. Ex.: @location', array('@location' => $path .'/identica.png')),
+    '#default_value' => variable_get('tweet_identica_image', $path .'/identica.png'),
   );
   $form['tweet_exclude'] = array(
     '#type' => 'textfield',
@@ -86,9 +93,9 @@ function tweet_admin() {
   $form['tweet_format'] = array(
     '#type' => 'textfield',
     '#title' => t('Format'),
-    '#description' => t('Manipulate the elements of the tweet by changing their order, removing them, or adding them (like hashtags).') .' '.
-      t('You can use the case-sensitive tokens [url], [title], [node-tags], and [node-teaser].') .' '.
-      t('The [node-tags] and [node-teaser] tokens only take effect on nodes.') .' '.
+    '#description' => t('Manipulate the elements of the tweet by changing their order, removing them, or adding them (like hashtags).') . ' ' .
+      t('You can use the case-sensitive tokens [url], [title], [node-tags], and [node-teaser].') . ' ' .
+      t('The [node-tags] and [node-teaser] tokens only take effect on nodes.') . ' ' .
       t('Note that some token values may be truncated or left out to fit the tweet into 140 characters.'),
     '#maxlength' => 140,
     '#default_value' => variable_get('tweet_format', '[url] [title] [node-tags]'),

@@ -1,4 +1,9 @@
 ; $Id$
 name = Tweet
 description = Builds links to post pages to Twitter and Twitter API sites.
-core = 6.x
+core = 7.x
+configure = admin/config/tweet
+
+files[] = tweet.admin.inc
+files[] = tweet.install
+files[] = tweet.module
