@@ -97,7 +97,7 @@ function tweet_tweet_sites() {
     'Identi.ca' => array(
       'path' => 'http://identi.ca/notice/new',
       'query_key' => 'status_textarea',
-      'image' => variable_get('tweet_identica_image', $path .'/identica.png'),
+      'image' => variable_get('tweet_identica_image', $path . '/identica.png'),
     ),
   );
 }

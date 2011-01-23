@@ -77,12 +77,12 @@ function tweet_admin($form, &$form_state) {
     '#description' => t('The location of the icon to use with the "Post to Twitter" link, relative to your Drupal installation. Ex.: @location', array('@location' => $path . '/twitter.png')),
     '#default_value' => variable_get('tweet_image', $path . '/twitter.png'),
   );
-  $image_location = drupal_get_path('module', 'tweet') .'/identica.png';
+  $image_location = drupal_get_path('module', 'tweet') . '/identica.png';
   $form['tweet_identica_image'] = array(
     '#type' => 'textfield',
     '#title' => t('Identica image'),
-    '#description' => t('The location of the icon to use with the "Post to Identi.ca" link, relative to your Drupal installation. Ex.: @location', array('@location' => $path .'/identica.png')),
-    '#default_value' => variable_get('tweet_identica_image', $path .'/identica.png'),
+    '#description' => t('The location of the icon to use with the "Post to Identi.ca" link, relative to your Drupal installation. Ex.: @location', array('@location' => $path . '/identica.png')),
+    '#default_value' => variable_get('tweet_identica_image', $path . '/identica.png'),
   );
   $form['tweet_exclude'] = array(
     '#type' => 'textfield',
