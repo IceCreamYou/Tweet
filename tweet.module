@@ -20,15 +20,12 @@ function tweet_help($path, $arg) {
 }
 
 /**
- * Implements hook_link().
+ * Implements hook_node_view().
  */
-function tweet_link($type, $node = NULL, $teaser = FALSE) {
+function tweet_node_view($node, $view_mode) {
   $types = variable_get('tweet_types', _tweet_node_types());
-  if ($type == 'node'
-      && (in_array($node->type, $types) || empty($types))
-      && !_tweet_exclude($node->nid)) {
-    $title = variable_get('tweet_title', 1);
-    if (!$teaser) {
+  if ((in_array($node->type, $types) || empty($types)) && !_tweet_exclude($node->nid)) {
+    if ($view_mode == 'full') {
       $link_type = variable_get('tweet_node', 'icon');
     }
     else {
@@ -39,7 +36,11 @@ function tweet_link($type, $node = NULL, $teaser = FALSE) {
       foreach (tweet_sites(TRUE) as $site => $info) {
         $links['tweet_' . $site] = _tweet_to_twitter($site, $link_type, '', $node->nid);
       }
-      return $links;
+      $node->content['links']['tweet'] = array(
+        '#theme' => 'links',
+        '#links' => $links,
+        '#attributes' => array('class' => array('links', 'inline')),
+      );
     }
   }
 }
