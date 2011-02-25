@@ -1,3 +1,2 @@
-; $Id$
 name = Tweet
 description = "Builds links to post pages to twitter."
