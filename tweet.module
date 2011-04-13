@@ -181,8 +181,8 @@ function _tweet_to_twitter($site = 'Twitter', $type = '', $format = '', $nid = '
       $tags = array();
       foreach ($node_tag_vocabs as $vid => $enabled) {
         if ($enabled) {
-          // In Drupal 6, we had taxonomy_node_get_terms_by_vocabulary.
-          // That doesn't exist in Drupal 7, so we copy it here.
+          // In Drupal 6, we had taxonomy_node_get_terms_by_vocabulary().
+          // That doesn't exist in Drupal 7, so it is copied/ported below.
           $terms = db_query("
             SELECT t.tid, t.*
             FROM {taxonomy_term_data} t
