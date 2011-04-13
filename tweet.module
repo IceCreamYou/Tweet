@@ -179,10 +179,21 @@ function _tweet_to_twitter($site = 'Twitter', $type = '', $format = '', $nid = '
     if (module_exists('taxonomy') && strpos($format, '[node-tags]') !== FALSE) {
       $node_tag_vocabs = variable_get('tweet_node_vocabs', array());
       $tags = array();
-      $node = node_load($nid);
       foreach ($node_tag_vocabs as $vid => $enabled) {
         if ($enabled) {
-          $terms = taxonomy_node_get_terms_by_vocabulary($node, $vid);
+          // In Drupal 6, we had taxonomy_node_get_terms_by_vocabulary.
+          // That doesn't exist in Drupal 7, so we copy it here.
+          $terms = db_query("
+            SELECT t.tid, t.*
+            FROM {taxonomy_term_data} t
+            INNER JOIN {taxonomy_index} r
+              ON r.tid = t.tid
+            WHERE t.vid = :vid AND r.nid = :node_nid
+            ORDER BY weight
+          ", array(
+            ':vid' => $vid,
+            ':node_nid' => $nid
+          ))->addTag('node_access')->fetchAll();
           foreach ($terms as $term) {
             $tags[] = '#' . check_plain($term->name);
           }
