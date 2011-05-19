@@ -90,7 +90,7 @@ function tweet_tweet_sites() {
   $path = drupal_get_path('module', 'tweet');
   return array(
     'Twitter' => array(
-      'path' => 'http://twitter.com/home',
+      'path' => 'http://twitter.com/',
       'query_key' => 'status',
       'image' => variable_get('tweet_image', $path . '/twitter.png'),
     ),
