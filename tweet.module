@@ -174,6 +174,9 @@ function _tweet_to_twitter($site = 'Twitter', $type = '', $format = '', $nid = '
   }
   $sites = tweet_sites();
   $site_info = $sites[$site];
+  if (empty($nid) && arg(0) == 'node' && is_numeric(arg(1))) {
+    $nid = arg(1);
+  }
   if (is_numeric($nid)) {
     $q = url('node/' . $nid, array('absolute' => TRUE));
     if (module_exists('taxonomy') && strpos($format, '[node-tags]') !== FALSE) {
