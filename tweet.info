@@ -6,3 +6,6 @@ configure = admin/config/tweet
 files[] = tweet.admin.inc
 files[] = tweet.install
 files[] = tweet.module
+
+; Views handlers
+files[] = tweet_views_handler_field_button.inc

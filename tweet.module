@@ -374,3 +374,13 @@ function _tweet_node_types() {
 function _tweet_text($site) {
   return str_replace('[site]', check_plain($site), variable_get('tweet_text', t('Post to [site]')));
 }
+
+/**
+ * Implements hook_views_api().
+ */
+function tweet_views_api() {
+  return array(
+    'api' => '2',
+    'path' => drupal_get_path('module', 'tweet'),
+  );
+}
