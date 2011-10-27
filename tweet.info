@@ -1,7 +1,7 @@
 name = Tweet
 description = Builds links to post pages to Twitter and Twitter API sites.
 core = 7.x
-configure = admin/config/tweet
+configure = admin/config/services/tweet
 
 files[] = tweet.admin.inc
 files[] = tweet.install
